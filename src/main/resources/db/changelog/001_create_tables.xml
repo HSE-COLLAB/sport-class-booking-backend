@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+          http://www.liquibase.org/xml/ns/dbchangelog
+          https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="create_table_users" author="Nikita">
+        <createTable tableName="users">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="email" type="varchar(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+
+            <column name="password" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="first_name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="last_name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="middle_name" type="varchar(255)">
+            </column>
+
+            <column name="role" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="create_table_groups" author="Nikita">
+        <createTable tableName="groups">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="faculty" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="academic_major" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="group_number" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="create_table_students" author="Nikita">
+        <createTable tableName="students">
+            <column name="user_id" type="UUID">
+                <constraints primaryKey="true"
+                             nullable="false"
+                             foreignKeyName="fk_students_user"
+                             references="users(id)"/>
+            </column>
+
+            <column name="group_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_students_group"
+                             references="groups(id)"/>
+            </column>
+
+            <column name="health_group" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="create_table_teachers" author="Nikita">
+        <createTable tableName="teachers">
+            <column name="user_id" type="UUID">
+                <constraints primaryKey="true"
+                             nullable="false"
+                             foreignKeyName="fk_teachers_user"
+                             references="users(id)"/>
+            </column>
+
+            <column name="position" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="create_table_workout_types" author="Nikita">
+        <createTable tableName="workout_types">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true"
+                             nullable="false"/>
+            </column>
+
+            <column name="title" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="allow_health_group" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="is_active" type="bool">
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="create_table_lessons" author="Nikita">
+        <createTable tableName="lessons">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true"
+                             nullable="false"/>
+            </column>
+
+            <column name="title" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="place" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="workout_type_id" type="uuid">
+                <constraints nullable="false"
+                             foreignKeyName="fk_lessons_type"
+                             references="workout_types(id)"/>
+            </column>
+
+            <column name="teacher_id" type="uuid">
+                <constraints nullable="false"
+                             foreignKeyName="fk_lessons_teacher"
+                             references="teachers(user_id)"/>
+            </column>
+
+            <column name="start_time" type="timestamptz">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="end_time" type="timestamptz">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="count_of_vacant_places" type="integer">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="notes" type="text">
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="create_table_sheets" author="Nikita">
+        <createTable tableName="sheets">
+
+            <column name="id" type="uuid">
+                <constraints primaryKey="true"
+                             nullable="false"/>
+            </column>
+
+            <column name="lesson_id" type="uuid">
+                <constraints nullable="false"
+                             foreignKeyName="fk_sheets_lesson"
+                             references="lessons(id)"/>
+            </column>
+
+            <column name="student_id" type="uuid">
+                <constraints nullable="false"
+                             foreignKeyName="fk_sheets_student"
+                             references="students(user_id)"/>
+            </column>
+
+            <column name="visited" type="bool">
+            </column>
+        </createTable>
+    </changeSet>
+</databaseChangeLog>
