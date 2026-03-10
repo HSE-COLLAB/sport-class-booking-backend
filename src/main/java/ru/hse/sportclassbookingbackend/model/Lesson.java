@@ -43,7 +43,7 @@ public class Lesson {
     private OffsetDateTime endTime;
 
     @Column(name = "total_places", nullable = false)
-    private int totalPlaces;
+    private Integer totalPlaces;
 
     @Column
     private String notes;

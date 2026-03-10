@@ -16,7 +16,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
-public class Teacher extends ru.hse.sportclassbookingbackend.model.User {
+public class Teacher extends User {
     @Column
     private String position;
 }
