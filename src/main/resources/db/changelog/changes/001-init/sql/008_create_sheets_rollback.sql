@@ -1,1 +1,1 @@
-drop table if exists sheets;
+DROP TABLE IF EXISTS sheets;

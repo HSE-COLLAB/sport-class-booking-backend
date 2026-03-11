@@ -1,10 +1,10 @@
-create table sheets
+CREATE TABLE sheets
 (
-    id UUID not null,
-    lesson_id UUID not null,
-    student_id UUID not null,
-    visited bool,
-    constraint pk_sheets primary key (id),
-    constraint fk_sheets_lessons foreign key (lesson_id) references lessons(id),
-    constraint fk_sheets_students foreign key (student_id) references students(user_id)
+    id UUID NOT NULL,
+    lesson_id UUID NOT NULL,
+    student_id UUID NOT NULL,
+    visited BOOL,
+    CONSTRAINT pk_sheets PRIMARY KEY (id),
+    CONSTRAINT fk_sheets_lessons FOREIGN KEY (lesson_id) REFERENCES lessons(id),
+    CONSTRAINT fk_sheets_students FOREIGN KEY (student_id) REFERENCES students(user_id)
 );

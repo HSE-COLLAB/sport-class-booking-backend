@@ -1,10 +1,9 @@
-create table students
-(
-    user_id UUID not null,
-    group_id UUID not null,
-    health_group_id integer not null default 5,
-    constraint pk_students primary key (user_id),
-    constraint fk_students_user foreign key (user_id) references users(id),
-    constraint fk_students_group foreign key (group_id) references groups(id),
-    constraint fk_students_health_group foreign key (health_group_id) references health_groups(id)
+CREATE TABLE students (
+    user_id UUID,
+    group_id UUID,
+    health_group_id INTEGER NOT NULL DEFAULT 5,
+    CONSTRAINT pk_students PRIMARY KEY (user_id),
+    CONSTRAINT fk_students_user FOREIGN KEY (user_id) REFERENCES users(id),
+    CONSTRAINT fk_students_group FOREIGN KEY (group_id) REFERENCES groups(id),
+    CONSTRAINT fk_students_health_group FOREIGN KEY (health_group_id) REFERENCES health_groups(id)
 );

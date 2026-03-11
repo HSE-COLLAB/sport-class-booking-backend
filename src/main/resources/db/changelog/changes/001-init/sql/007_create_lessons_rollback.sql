@@ -1,1 +1,1 @@
-drop table if exists lessons;
+DROP TABLE IF EXISTS lessons;

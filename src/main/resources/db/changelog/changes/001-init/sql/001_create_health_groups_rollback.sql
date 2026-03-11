@@ -1,1 +1,1 @@
-drop table if exists health_groups;
+DROP TABLE IF EXISTS health_groups;

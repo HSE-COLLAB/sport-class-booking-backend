@@ -1,9 +1,8 @@
-create table workout_types
-(
-    id UUID not null,
-    title varchar(255),
-    allow_health_group_id integer not null,
-    is_active bool not null default true,
-    constraint pk_workout_types primary key (id),
-    constraint fk_workout_types_health_groups foreign key (allow_health_group_id) references health_groups(id)
+CREATE TABLE workout_types (
+    id UUID NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    allow_health_group_id INTEGER NOT NULL,
+    is_active bool NOT NULL DEFAULT true,
+    CONSTRAINT pk_workout_types PRIMARY KEY (id),
+    CONSTRAINT fk_workout_types_health_groups FOREIGN KEY (allow_health_group_id) REFERENCES health_groups(id)
 );
