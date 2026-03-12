@@ -22,7 +22,9 @@ import java.util.UUID;
 @NoArgsConstructor
 @EqualsAndHashCode(of = "id")
 public class Sheet {
+
     @Id
+    @Column(name = "id")
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -33,7 +35,7 @@ public class Sheet {
     @JoinColumn(name = "student_id")
     private Student student;
 
-    @Column
+    @Column(name = "visited")
     private Boolean visited;
 
     @PrePersist

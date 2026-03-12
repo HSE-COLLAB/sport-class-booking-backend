@@ -29,13 +29,15 @@ import java.util.UUID;
 @NoArgsConstructor
 @EqualsAndHashCode(of = "id")
 public class User {
+
     @Id
+    @Column(name = "id")
     private UUID id;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "email", nullable = false, unique = true)
     private String email;
 
-    @Column(nullable = false)
+    @Column(name = "password", nullable = false)
     private String password;
 
     @Column(name = "first_name", nullable = false)
@@ -48,7 +50,7 @@ public class User {
     private String middleName;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "role", nullable = false, insertable = false, updatable = false)
     private Role role;
 
     @PrePersist

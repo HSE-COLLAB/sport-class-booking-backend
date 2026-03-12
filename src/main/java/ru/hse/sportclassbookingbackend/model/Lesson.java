@@ -17,7 +17,6 @@ import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -28,13 +27,15 @@ import java.util.UUID;
 @NoArgsConstructor
 @EqualsAndHashCode(of = "id")
 public class Lesson {
+
     @Id
+    @Column(name = "id")
     private UUID id;
 
-    @Column
+    @Column(name = "title", nullable = false)
     private String title;
 
-    @Column
+    @Column(name = "place", nullable = false)
     private String place;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -54,7 +55,7 @@ public class Lesson {
     @Column(name = "total_places", nullable = false)
     private Integer totalPlaces;
 
-    @Column
+    @Column(name = "notes")
     private String notes;
 
     @OneToMany(mappedBy = "lesson", cascade = CascadeType.REMOVE, orphanRemoval = true)
