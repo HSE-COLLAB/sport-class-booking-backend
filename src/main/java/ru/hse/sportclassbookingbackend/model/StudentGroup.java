@@ -19,16 +19,18 @@ import java.util.UUID;
 @NoArgsConstructor
 @EqualsAndHashCode(of = "id")
 public class StudentGroup {
+
     @Id
+    @Column(name = "id")
     private UUID id;
 
-    @Column
+    @Column(name = "faculty", nullable = false)
     private String faculty;
 
-    @Column(name = "academic_major")
+    @Column(name = "academic_major", nullable = false)
     private String academicMajor;
 
-    @Column(name = "group_number")
+    @Column(name = "group_number", nullable = false)
     private String groupNumber;
 
     @PrePersist

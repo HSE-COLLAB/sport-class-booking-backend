@@ -17,6 +17,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class Teacher extends User {
-    @Column
+
+    @Column(name = "position")
     private String position;
 }

@@ -16,9 +16,11 @@ import lombok.Setter;
 @NoArgsConstructor
 @EqualsAndHashCode(of = "id")
 public class HealthGroup {
+
     @Id
+    @Column(name = "id")
     private Integer id;
 
-    @Column(nullable = false)
+    @Column(name = "description", nullable = false)
     private String description;
 }
