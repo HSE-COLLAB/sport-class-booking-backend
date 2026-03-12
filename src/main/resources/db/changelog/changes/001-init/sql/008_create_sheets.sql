@@ -1,10 +1,10 @@
 CREATE TABLE sheets
 (
-    id UUID NOT NULL,
-    lesson_id UUID NOT NULL,
+    id         UUID NOT NULL,
+    lesson_id  UUID NOT NULL,
     student_id UUID NOT NULL,
-    visited BOOL,
+    visited    BOOLEAN,
     CONSTRAINT pk_sheets PRIMARY KEY (id),
-    CONSTRAINT fk_sheets_lessons FOREIGN KEY (lesson_id) REFERENCES lessons(id),
-    CONSTRAINT fk_sheets_students FOREIGN KEY (student_id) REFERENCES students(user_id)
+    CONSTRAINT fk_sheets_lessons FOREIGN KEY (lesson_id) REFERENCES lessons (id),
+    CONSTRAINT fk_sheets_students FOREIGN KEY (student_id) REFERENCES students (user_id)
 );
