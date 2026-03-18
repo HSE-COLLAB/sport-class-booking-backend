@@ -8,6 +8,7 @@ import ru.hse.sportclassbookingbackend.model.WorkoutType;
 
 @Mapper(componentModel = "spring", uses = HealthGroupMapper.class)
 public interface WorkoutTypeMapper {
+    @Mapping(target = "allowHealthGroup", source = "allowHealthGroup")
     WorkoutTypeResponse toResponse(WorkoutType workoutType);
 
     @Mapping(target="allowHealthGroup", ignore = true)
