@@ -5,9 +5,9 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
-import ru.hse.sportclassbookingbackend.dto.student_group.StudentGroupPatchRequest;
-import ru.hse.sportclassbookingbackend.dto.student_group.StudentGroupRequest;
-import ru.hse.sportclassbookingbackend.dto.student_group.StudentGroupResponse;
+import ru.hse.sportclassbookingbackend.dto.studentgroup.StudentGroupPatchRequest;
+import ru.hse.sportclassbookingbackend.dto.studentgroup.StudentGroupRequest;
+import ru.hse.sportclassbookingbackend.dto.studentgroup.StudentGroupResponse;
 import ru.hse.sportclassbookingbackend.model.StudentGroup;
 
 @Mapper(componentModel = "spring")
