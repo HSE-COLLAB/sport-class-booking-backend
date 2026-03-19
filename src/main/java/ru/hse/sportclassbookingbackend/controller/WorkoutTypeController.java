@@ -12,9 +12,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import ru.hse.sportclassbookingbackend.dto.workout_type.WorkoutTypePatchRequest;
-import ru.hse.sportclassbookingbackend.dto.workout_type.WorkoutTypeRequest;
-import ru.hse.sportclassbookingbackend.dto.workout_type.WorkoutTypeResponse;
+import ru.hse.sportclassbookingbackend.dto.workouttype.WorkoutTypePatchRequest;
+import ru.hse.sportclassbookingbackend.dto.workouttype.WorkoutTypeRequest;
+import ru.hse.sportclassbookingbackend.dto.workouttype.WorkoutTypeResponse;
 import ru.hse.sportclassbookingbackend.service.WorkoutTypeService;
 
 import java.util.List;
@@ -24,30 +24,30 @@ import java.util.UUID;
 @RequestMapping("/api/workout-types")
 @RequiredArgsConstructor
 public class WorkoutTypeController {
+
     private final WorkoutTypeService workoutTypeService;
 
     @GetMapping
     public ResponseEntity<List<WorkoutTypeResponse>> getAll() {
-        List<WorkoutTypeResponse> workoutTypeResponses = workoutTypeService.getAll();
-        return ResponseEntity.ok(workoutTypeResponses);
+        return ResponseEntity.ok(workoutTypeService.getAll());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<WorkoutTypeResponse> getById(@PathVariable UUID id) {
-        WorkoutTypeResponse workoutTypeResponse = workoutTypeService.getById(id);
-        return ResponseEntity.ok(workoutTypeResponse);
+        return ResponseEntity.ok(workoutTypeService.getById(id));
     }
 
     @PostMapping
     public ResponseEntity<WorkoutTypeResponse> create(@RequestBody @Valid WorkoutTypeRequest request) {
-        WorkoutTypeResponse workoutTypeResponse = workoutTypeService.create(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(workoutTypeResponse);
+        return ResponseEntity.status(HttpStatus.CREATED).body(workoutTypeService.create(request));
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<WorkoutTypeResponse> patch(@PathVariable UUID id, @RequestBody WorkoutTypePatchRequest request) {
-        WorkoutTypeResponse workoutTypeResponse = workoutTypeService.patch(id, request);
-        return ResponseEntity.ok(workoutTypeResponse);
+    public ResponseEntity<WorkoutTypeResponse> patch(
+            @PathVariable UUID id,
+            @RequestBody WorkoutTypePatchRequest request
+    ) {
+        return ResponseEntity.ok(workoutTypeService.patch(id, request));
     }
 
     @DeleteMapping("/{id}")

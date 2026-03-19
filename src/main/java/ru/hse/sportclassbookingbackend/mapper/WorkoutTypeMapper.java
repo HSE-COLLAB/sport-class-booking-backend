@@ -2,8 +2,8 @@ package ru.hse.sportclassbookingbackend.mapper;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import ru.hse.sportclassbookingbackend.dto.workout_type.WorkoutTypeRequest;
-import ru.hse.sportclassbookingbackend.dto.workout_type.WorkoutTypeResponse;
+import ru.hse.sportclassbookingbackend.dto.workouttype.WorkoutTypeRequest;
+import ru.hse.sportclassbookingbackend.dto.workouttype.WorkoutTypeResponse;
 import ru.hse.sportclassbookingbackend.model.WorkoutType;
 
 @Mapper(componentModel = "spring", uses = HealthGroupMapper.class)

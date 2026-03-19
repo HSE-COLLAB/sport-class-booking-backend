@@ -8,6 +8,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface WorkoutTypeRepository extends JpaRepository<WorkoutType, UUID> {
+
     List<WorkoutType> findAllByIsActiveTrue();
+
     Optional<WorkoutType> findByIdAndIsActiveTrue(UUID id);
 }
