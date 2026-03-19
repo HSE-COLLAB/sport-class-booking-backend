@@ -10,9 +10,9 @@ import ru.hse.sportclassbookingbackend.mapper.StudentGroupMapper;
 import ru.hse.sportclassbookingbackend.model.StudentGroup;
 import ru.hse.sportclassbookingbackend.repository.StudentGroupRepository;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -22,19 +22,15 @@ public class StudentGroupServiceImpl implements StudentGroupService {
 
     @Override
     public List<StudentGroupResponse> getAll() {
-        List<StudentGroup> studentGroups = studentGroupRepository.findAll();
-        List<StudentGroupResponse> studentGroupResponses = new ArrayList<>();
-        for (StudentGroup studentGroup : studentGroups) {
-            studentGroupResponses.add(studentGroupMapper.toResponse(studentGroup));
-        }
-        return studentGroupResponses;
+        return studentGroupRepository.findAll()
+                .stream()
+                .map(studentGroupMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
     @Override
     public StudentGroupResponse create(StudentGroupRequest request) {
-        StudentGroup studentGroup = studentGroupMapper.toEntity(request);
-        studentGroupRepository.save(studentGroup);
-        return studentGroupMapper.toResponse(studentGroup);
+        return studentGroupMapper.toResponse(studentGroupRepository.save(studentGroupMapper.toEntity(request)));
     }
 
     @Override
