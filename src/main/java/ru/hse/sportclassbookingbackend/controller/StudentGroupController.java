@@ -28,25 +28,28 @@ public class StudentGroupController {
     private final StudentGroupService studentGroupService;
 
     @GetMapping
-    public ResponseEntity<List<StudentGroupResponse>> getAllStudentGroups() {
-        return ResponseEntity.ok().body(studentGroupService.getAll());
+    public ResponseEntity<List<StudentGroupResponse>> getAll() {
+        return ResponseEntity.ok(studentGroupService.getAll());
     }
 
     // TODO: GET /{id} — вернуть группу со списком студентов
     // Реализовать когда будет готов студентский функционал
 
     @PostMapping
-    public ResponseEntity<StudentGroupResponse> createStudentGroup(@RequestBody @Valid StudentGroupRequest studentGroupRequest) {
+    public ResponseEntity<StudentGroupResponse> create(@RequestBody @Valid StudentGroupRequest studentGroupRequest) {
         return ResponseEntity.status(HttpStatus.CREATED).body(studentGroupService.create(studentGroupRequest));
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<StudentGroupResponse> updateStudentGroup(@PathVariable UUID id, @RequestBody StudentGroupPatchRequest request) {
-        return ResponseEntity.ok().body(studentGroupService.patch(id, request));
+    public ResponseEntity<StudentGroupResponse> update(
+            @PathVariable UUID id,
+            @RequestBody StudentGroupPatchRequest request
+    ) {
+        return ResponseEntity.ok(studentGroupService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteStudentGroup(@PathVariable UUID id) {
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
         studentGroupService.delete(id);
         return ResponseEntity.noContent().build();
     }

@@ -15,7 +15,7 @@ public interface WorkoutTypeService {
 
     WorkoutTypeResponse create(WorkoutTypeRequest request);
 
-    WorkoutTypeResponse patch(UUID id, WorkoutTypePatchRequest request);
+    WorkoutTypeResponse update(UUID id, WorkoutTypePatchRequest request);
 
     void delete(UUID id);
 }

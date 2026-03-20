@@ -13,7 +13,7 @@ public interface StudentGroupService {
 
     StudentGroupResponse create(StudentGroupRequest request);
 
-    StudentGroupResponse patch(UUID id, StudentGroupPatchRequest request);
+    StudentGroupResponse update(UUID id, StudentGroupPatchRequest request);
 
     void delete(UUID id);
 }
