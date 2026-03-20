@@ -35,11 +35,13 @@ public class StudentGroupServiceImpl implements StudentGroupService {
     }
 
     @Override
-    public StudentGroupResponse patch(UUID id, StudentGroupPatchRequest request) {
+    public StudentGroupResponse update(UUID id, StudentGroupPatchRequest request) {
         StudentGroup studentGroup = studentGroupRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Student group with id: " + id + " not found"));
+                .orElseThrow(() -> new NotFoundException("Student group with id: " + id + " was not found"));
+
         studentGroupMapper.updateFromPatch(request, studentGroup);
         studentGroupRepository.save(studentGroup);
+
         return studentGroupMapper.toResponse(studentGroup);
     }
 

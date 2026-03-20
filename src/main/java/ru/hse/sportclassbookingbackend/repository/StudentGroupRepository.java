@@ -6,5 +6,4 @@ import ru.hse.sportclassbookingbackend.model.StudentGroup;
 import java.util.UUID;
 
 public interface StudentGroupRepository extends JpaRepository<StudentGroup, UUID> {
-
 }

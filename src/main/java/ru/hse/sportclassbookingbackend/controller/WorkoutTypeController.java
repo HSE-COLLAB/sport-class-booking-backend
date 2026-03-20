@@ -43,11 +43,11 @@ public class WorkoutTypeController {
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<WorkoutTypeResponse> patch(
+    public ResponseEntity<WorkoutTypeResponse> update(
             @PathVariable UUID id,
             @RequestBody WorkoutTypePatchRequest request
     ) {
-        return ResponseEntity.ok(workoutTypeService.patch(id, request));
+        return ResponseEntity.ok(workoutTypeService.update(id, request));
     }
 
     @DeleteMapping("/{id}")

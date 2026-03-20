@@ -36,19 +36,22 @@ public class WorkoutTypeServiceImpl implements WorkoutTypeService {
     public WorkoutTypeResponse getById(UUID id) {
         WorkoutType workoutType = workoutTypeRepository.findByIdAndIsActiveTrue(id)
                 .orElseThrow(() -> new NotFoundException("Workout type with id: " + id + " was not found"));
+
         return workoutTypeMapper.toResponse(workoutType);
     }
 
     public WorkoutTypeResponse create(WorkoutTypeRequest request) {
         HealthGroup healthGroup = healthGroupRepository.findById(request.allowHealthGroupId())
                 .orElseThrow(() -> new BadRequestException("Health group with id: " + request.allowHealthGroupId() + " was not found"));
+
         WorkoutType workoutType = workoutTypeMapper.toEntity(request);
         workoutType.setAllowHealthGroup(healthGroup);
         workoutType.setIsActive(true);
+
         return workoutTypeMapper.toResponse(workoutTypeRepository.save(workoutType));
     }
 
-    public WorkoutTypeResponse patch(UUID id, WorkoutTypePatchRequest request) {
+    public WorkoutTypeResponse update(UUID id, WorkoutTypePatchRequest request) {
         WorkoutType workoutType = workoutTypeRepository.findByIdAndIsActiveTrue(id)
                 .orElseThrow(() -> new NotFoundException("Workout type with id: " + id + " was not found"));
 
