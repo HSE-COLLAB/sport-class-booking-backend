@@ -13,6 +13,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
+import org.springframework.util.AntPathMatcher;
 import ru.hse.sportclassbookingbackend.security.JwtAuthenticationFilter;
 
 /**
@@ -54,7 +55,6 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthenticationFilter, AuthorizationFilter.class);
         return http.build();
     }
-
 
     @Bean
     public PasswordEncoder passwordEncoder() {

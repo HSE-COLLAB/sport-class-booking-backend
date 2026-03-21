@@ -19,6 +19,10 @@ security:
     expiration: ${REFRESH_EXPIRATION_MILLIS:2629746000}
   bcrypt:
     rounds: ${BCRYPT_ROUNDS:10}
+  development:
+    enabled: false
+    role: STUDENT # STUDENT | TEACHER | ADMIN
+
 
 logging:
   level:
