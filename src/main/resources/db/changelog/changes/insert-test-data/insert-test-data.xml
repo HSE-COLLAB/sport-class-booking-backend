@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="v1.0.0-init-create-health-groups" author="dev">
+        <sqlFile path="sql/insert_all_test_entities.sql"
+                 relativeToChangelogFile="true"
+                 encoding="UTF-8"/>
+        <rollback>
+            <sqlFile path="sql/insert_all_test_entities_rollback.sql"
+                     relativeToChangelogFile="true"
+                     encoding="UTF-8"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

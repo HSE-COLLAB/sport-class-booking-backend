@@ -21,5 +21,25 @@ services:
       timeout: 3s
       retries: 10
 
+  redis:
+    image: redis:8.4
+    container_name: sport-class-booking-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass ${REDIS_PASSWORD:-qwerty}
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-qwerty}
+    volumes:
+      - redis-data:/data
+
+  adminer:
+    image: adminer
+    ports:
+      - '1234:8080'
+    depends_on:
+      - db
+
+
 volumes:
   pgdata:
+  redis-data:

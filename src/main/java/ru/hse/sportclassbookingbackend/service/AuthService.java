@@ -1,10 +1,12 @@
 package ru.hse.sportclassbookingbackend.service;
 
 
-import ru.hse.sportclassbookingbackend.dto.AuthResponse;
-import ru.hse.sportclassbookingbackend.dto.LoginRequest;
-import ru.hse.sportclassbookingbackend.dto.RegisterStudentRequest;
-import ru.hse.sportclassbookingbackend.dto.RegisterTeacherRequest;
+import ru.hse.sportclassbookingbackend.dto.auth.AuthResponse;
+import ru.hse.sportclassbookingbackend.dto.auth.LoginRequest;
+import ru.hse.sportclassbookingbackend.dto.auth.RegisterStudentRequest;
+import ru.hse.sportclassbookingbackend.dto.auth.RegisterTeacherRequest;
+
+import java.util.UUID;
 
 public interface AuthService {
     AuthResponse registerStudent(RegisterStudentRequest request);
@@ -13,6 +15,7 @@ public interface AuthService {
 
     AuthResponse login(LoginRequest request);
 
-    AuthResponse refresh(String refresh);
+    AuthResponse refresh(UUID refresh);
 
+    void logout(UUID refresh);
 }

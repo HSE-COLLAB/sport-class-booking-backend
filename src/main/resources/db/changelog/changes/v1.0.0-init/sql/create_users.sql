@@ -7,5 +7,6 @@ CREATE TABLE users
     last_name   VARCHAR(255)        NOT NULL,
     middle_name VARCHAR(255),
     role        VARCHAR(255)        NOT NULL,
-    CONSTRAINT pk_users PRIMARY KEY (id)
+    CONSTRAINT pk_users PRIMARY KEY (id),
+    CONSTRAINT chk_users_role CHECK (role IN ('STUDENT', 'TEACHER', 'ADMIN'))
 );

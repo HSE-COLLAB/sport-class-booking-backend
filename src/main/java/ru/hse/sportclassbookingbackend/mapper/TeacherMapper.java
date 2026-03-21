@@ -3,7 +3,7 @@ package ru.hse.sportclassbookingbackend.mapper;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import ru.hse.sportclassbookingbackend.dto.RegisterTeacherRequest;
+import ru.hse.sportclassbookingbackend.dto.auth.RegisterTeacherRequest;
 import ru.hse.sportclassbookingbackend.model.Teacher;
 
 @Mapper(componentModel = "spring")

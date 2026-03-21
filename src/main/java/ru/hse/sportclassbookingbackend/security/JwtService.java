@@ -8,13 +8,13 @@ import org.springframework.stereotype.Component;
 import ru.hse.sportclassbookingbackend.model.Role;
 
 import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-import java.util.Base64;
 import java.util.Date;
+import java.util.Optional;
 import java.util.UUID;
 
 @Component
 public class JwtService {
+
     @Value("${security.jwt.secret}")
     private String secret;
 
@@ -35,19 +35,26 @@ public class JwtService {
                 .compact();
     }
 
-    public Claims parseToken(String token) {
-        return Jwts.parser()
-                .verifyWith(getSigningKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+    public Optional<JwtTokenData> parseToken(String token) {
+        try {
+            Claims claims = Jwts.parser()
+                    .verifyWith(getSigningKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+            return Optional.of(
+                    new JwtTokenData(UUID.fromString(claims.getSubject()), Role.valueOf(claims.get("role", String.class)))
+            );
+
+        } catch (Exception ex) {
+            return Optional.empty();
+        }
     }
 
-    public UUID getUserIdFromToken(String token) {
-        return UUID.fromString(parseToken(token).getSubject());
-    }
 
-    public Role getUserRoleFromToken(String token) {
-        return parseToken(token).get("role", Role.class);
+    public record JwtTokenData(
+            UUID userId,
+            Role role
+    ) {
     }
 }
