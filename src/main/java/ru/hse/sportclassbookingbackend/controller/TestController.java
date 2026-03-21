@@ -9,7 +9,7 @@ import ru.hse.sportclassbookingbackend.security.UserPrincipal;
 
 // Контроллер для тестирования авторизации
 @RestController
-@RequestMapping("/test-auth")
+@RequestMapping("api/test-auth")
 public class TestController {
 
     @GetMapping("/common")

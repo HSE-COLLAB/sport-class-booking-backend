@@ -19,7 +19,7 @@ import ru.hse.sportclassbookingbackend.service.AuthService;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
 

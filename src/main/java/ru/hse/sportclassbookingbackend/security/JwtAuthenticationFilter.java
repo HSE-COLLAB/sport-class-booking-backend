@@ -22,10 +22,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    @Value("${security.development.enabled:false}")
+    @Value("${security.development.default-user.enabled:false}")
     private Boolean devModEnabled;
 
-    @Value("${security.development.role:STUDENT}")
+    @Value("${security.development.default-user.role:STUDENT}")
     private Role role;
 
     public final JwtService jwtService;

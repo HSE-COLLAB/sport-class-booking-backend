@@ -20,8 +20,9 @@ security:
   bcrypt:
     rounds: ${BCRYPT_ROUNDS:10}
   development:
-    enabled: false
-    role: STUDENT # STUDENT | TEACHER | ADMIN
+    default-user:
+      enabled: true
+      role: STUDENT # STUDENT | TEACHER | ADMIN
 
 
 logging:
