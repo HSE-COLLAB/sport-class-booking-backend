@@ -18,6 +18,3 @@ security:
     expiration: ${REFRESH_EXPIRATION_MILLIS}
   bcrypt:
     rounds: ${BCRYPT_ROUNDS}
-  development:
-    default-user:
-      enabled: false
