@@ -10,7 +10,6 @@ import ru.hse.sportclassbookingbackend.model.Role;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -52,18 +51,21 @@ public class RefreshTokenService {
         return token;
     }
 
-    public Optional<RefreshTokenData> getTokenData(UUID token){
+    public Optional<RefreshTokenData> getTokenData(UUID token) {
         String key = REFRESH_PREFIX + token;
-        if (!redisTemplate.hasKey(key)){
+        Map<Object, Object> entries = redisTemplate.opsForHash().entries(key);
+        if (entries.isEmpty()) {
             return Optional.empty();
         }
-        UUID userId = UUID.fromString(Objects.requireNonNull(redisTemplate.opsForHash().get(key, "userId")).toString());
-        Role role = Role.valueOf(Objects.requireNonNull(redisTemplate.opsForHash().get(key, "role")).toString());
-
-        return Optional.of(new RefreshTokenData(userId,role));
+        String userIdStr = (String) entries.get("userId");
+        String roleStr = (String) entries.get("role");
+        if (userIdStr == null || roleStr == null) {
+            return Optional.empty();
+        }
+        return Optional.of(new RefreshTokenData(UUID.fromString(userIdStr), Role.valueOf(roleStr)));
     }
 
-    public void delete(UUID refreshToken){
+    public void delete(UUID refreshToken) {
         String key = REFRESH_PREFIX + refreshToken;
         redisTemplate.delete(key);
     }

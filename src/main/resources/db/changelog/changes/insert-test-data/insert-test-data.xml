@@ -5,7 +5,7 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
 
-    <changeSet id="v1.0.0-init-create-health-groups" author="dev">
+    <changeSet id="insert-test-data" author="dev">
         <sqlFile path="sql/insert_all_test_entities.sql"
                  relativeToChangelogFile="true"
                  encoding="UTF-8"/>

@@ -13,8 +13,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
-import org.springframework.util.AntPathMatcher;
+import ru.hse.sportclassbookingbackend.security.DevAuthFilter;
 import ru.hse.sportclassbookingbackend.security.JwtAuthenticationFilter;
+
+import java.util.Optional;
 
 /**
     Заголовок Authorization игнорируется при обращении к /api/auth/**
@@ -38,9 +40,14 @@ public class SecurityConfig {
     private Integer bcryptRounds;
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final Optional<DevAuthFilter> devAuthFilter;
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        devAuthFilter.ifPresent(f ->
+                http.addFilterBefore(f, JwtAuthenticationFilter.class)
+        );
+
         http
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)

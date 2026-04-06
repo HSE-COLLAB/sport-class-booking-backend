@@ -1,5 +1,6 @@
 package ru.hse.sportclassbookingbackend.controller;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -8,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 import ru.hse.sportclassbookingbackend.security.UserPrincipal;
 
 // Контроллер для тестирования авторизации
+@Profile("local")
 @RestController
 @RequestMapping("api/test-auth")
 public class TestController {

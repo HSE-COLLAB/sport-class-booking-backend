@@ -1,6 +1,5 @@
 package ru.hse.sportclassbookingbackend.controller;
 
-
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,7 +23,6 @@ import java.util.UUID;
 public class AuthController {
 
     private final AuthService authService;
-
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody @Valid LoginRequest request) {

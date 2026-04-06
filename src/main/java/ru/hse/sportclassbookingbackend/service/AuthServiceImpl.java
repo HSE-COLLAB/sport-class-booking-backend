@@ -47,21 +47,6 @@ public class AuthServiceImpl implements AuthService {
 
     private final PasswordEncoder passwordEncoder;
 
-    private void checkEmailNotExists(String email){
-        if (userRepository.existsByEmail(email))
-            throw new ConflictException("User with email " + email + " already exists");
-
-    }
-
-    private AuthResponse commonRegisterStage(User user){
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user = userRepository.save(user);
-        UUID refreshToken = refreshTokenService.create(user.getId(), user.getRole());
-        String accessToken = jwtService.generateAccessToken(user.getId(), user.getRole());
-        return AuthResponse.of(accessToken, refreshToken);
-    }
-
-
     @Override
     @Transactional
     public AuthResponse registerStudent(RegisterStudentRequest request) {
@@ -83,7 +68,6 @@ public class AuthServiceImpl implements AuthService {
         teacher.setRole(Role.TEACHER);
         return commonRegisterStage(teacher);
     }
-
 
     @Override
     public AuthResponse login(LoginRequest request) {
@@ -111,5 +95,19 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void logout(UUID refresh){
         refreshTokenService.delete(refresh);
+    }
+
+    private void checkEmailNotExists(String email){
+        if (userRepository.existsByEmail(email))
+            throw new ConflictException("User with email " + email + " already exists");
+
+    }
+
+    private AuthResponse commonRegisterStage(User user){
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user = userRepository.save(user);
+        UUID refreshToken = refreshTokenService.create(user.getId(), user.getRole());
+        String accessToken = jwtService.generateAccessToken(user.getId(), user.getRole());
+        return AuthResponse.of(accessToken, refreshToken);
     }
 }

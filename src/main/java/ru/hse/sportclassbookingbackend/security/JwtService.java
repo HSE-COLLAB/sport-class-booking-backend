@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import ru.hse.sportclassbookingbackend.model.Role;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
@@ -22,7 +23,7 @@ public class JwtService {
     private Long expiration; // Millis
 
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(secret.getBytes());
+        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
     public String generateAccessToken(UUID userId, Role role) {

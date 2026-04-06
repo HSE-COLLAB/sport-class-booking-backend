@@ -4,3 +4,20 @@ spring:
     username: ${DB_USER}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
+  data:
+    redis:
+      host: ${REDIS_URL}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
+
+security:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration: ${JWT_EXPIRATION_MILLIS}
+  refresh:
+    expiration: ${REFRESH_EXPIRATION_MILLIS}
+  bcrypt:
+    rounds: ${BCRYPT_ROUNDS}
+  development:
+    default-user:
+      enabled: false
