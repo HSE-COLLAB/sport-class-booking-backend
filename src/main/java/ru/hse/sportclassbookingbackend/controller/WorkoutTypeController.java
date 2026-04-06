@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/workout-types")
+@RequestMapping("/workout-types")
 @RequiredArgsConstructor
 public class WorkoutTypeController {
 

@@ -11,7 +11,7 @@ import ru.hse.sportclassbookingbackend.security.UserPrincipal;
 // Контроллер для тестирования авторизации
 @Profile("local")
 @RestController
-@RequestMapping("api/test-auth")
+@RequestMapping("/test-auth")
 public class TestController {
 
     @GetMapping("/common")
