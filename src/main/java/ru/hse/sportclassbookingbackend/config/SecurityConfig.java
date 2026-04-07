@@ -44,10 +44,6 @@ public class SecurityConfig {
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        devAuthFilter.ifPresent(f ->
-                http.addFilterBefore(f, JwtAuthenticationFilter.class)
-        );
-
         http
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
@@ -60,6 +56,11 @@ public class SecurityConfig {
                         }
                 )
                 .addFilterBefore(jwtAuthenticationFilter, AuthorizationFilter.class);
+
+        devAuthFilter.ifPresent(f ->
+                http.addFilterBefore(f, JwtAuthenticationFilter.class)
+        );
+
         return http.build();
     }
 

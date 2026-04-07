@@ -5,6 +5,7 @@ VALUES
     ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'Mathematics', 'Applied Mathematics', 'FM-2024');
 
 -- USERS (ADMIN, TEACHER, STUDENT) x2
+-- Пароль для пользователей: "test"
 INSERT INTO users (id, email, password, first_name, last_name, middle_name, role)
 VALUES
     ('11111111-1111-1111-1111-111111111111', 'admin1@mail.ru', '$2a$10$ESaaWK8//HirdHPjwQd9AePrMhUIzI5WbH1hMWqKgdFsYIeclK42m', 'Admin1', 'A.', 'S.', 'ADMIN'),
