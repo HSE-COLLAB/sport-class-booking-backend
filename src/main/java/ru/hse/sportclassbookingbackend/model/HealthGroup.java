@@ -23,4 +23,6 @@ public class HealthGroup {
 
     @Column(name = "description", nullable = false)
     private String description;
+
+    public static final Integer DEFAULT_HEALTH_GROUP_ID = 5;
 }

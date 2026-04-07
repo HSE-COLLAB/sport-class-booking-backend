@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/student-groups")
+@RequestMapping("/student-groups")
 @RequiredArgsConstructor
 public class StudentGroupController {
 

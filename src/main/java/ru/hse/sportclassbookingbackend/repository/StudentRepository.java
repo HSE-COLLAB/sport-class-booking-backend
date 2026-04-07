@@ -1,0 +1,9 @@
+package ru.hse.sportclassbookingbackend.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import ru.hse.sportclassbookingbackend.model.Student;
+
+import java.util.UUID;
+
+public interface StudentRepository extends JpaRepository<Student, UUID> {
+}
