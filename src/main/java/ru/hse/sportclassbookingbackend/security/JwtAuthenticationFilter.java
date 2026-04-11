@@ -60,6 +60,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         return SKIP_PATH.stream()
-                        .anyMatch(pattern -> antPathMatcher.match(pattern, request.getRequestURI()));
+                        .anyMatch(pattern -> antPathMatcher.match(pattern, request.getServletPath()));
     }
 }

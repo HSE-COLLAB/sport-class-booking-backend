@@ -43,7 +43,7 @@ public class StudentGroupController {
     @PatchMapping("/{id}")
     public ResponseEntity<StudentGroupResponse> update(
             @PathVariable UUID id,
-            @RequestBody StudentGroupPatchRequest request
+            @RequestBody @Valid StudentGroupPatchRequest request
     ) {
         return ResponseEntity.ok(studentGroupService.update(id, request));
     }
