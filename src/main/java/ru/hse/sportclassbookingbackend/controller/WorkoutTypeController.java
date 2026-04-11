@@ -45,7 +45,7 @@ public class WorkoutTypeController {
     @PatchMapping("/{id}")
     public ResponseEntity<WorkoutTypeResponse> update(
             @PathVariable UUID id,
-            @RequestBody WorkoutTypePatchRequest request
+            @RequestBody @Valid WorkoutTypePatchRequest request
     ) {
         return ResponseEntity.ok(workoutTypeService.update(id, request));
     }
