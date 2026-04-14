@@ -13,10 +13,10 @@ public interface UserMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "email", ignore = true)
     @Mapping(target = "password", ignore = true)
-    @Mapping(target = "first_name", ignore = true)
-    @Mapping(target = "last_name", ignore = true)
-    @Mapping(target = "middle_name", ignore = true)
+    @Mapping(target = "firstName", ignore = true)
+    @Mapping(target = "lastName", ignore = true)
+    @Mapping(target = "middleName", ignore = true)
     @Mapping(target = "role", ignore = true)
-    @Mapping(target = "is_active", ignore = true)
+    @Mapping(target = "isActive", ignore = true)
     User toEntity(UserRequest req);
 }
