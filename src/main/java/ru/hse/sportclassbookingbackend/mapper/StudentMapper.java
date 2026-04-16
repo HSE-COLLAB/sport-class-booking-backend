@@ -9,7 +9,7 @@ import ru.hse.sportclassbookingbackend.model.Student;
 @Mapper(componentModel = "spring")
 public interface StudentMapper {
 
-    StudentResponse to_response(Student student);
+    StudentResponse toResponse(Student student);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "role", ignore = true)
