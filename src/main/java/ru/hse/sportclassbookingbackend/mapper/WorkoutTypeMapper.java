@@ -10,8 +10,8 @@ import ru.hse.sportclassbookingbackend.model.WorkoutType;
 public interface WorkoutTypeMapper {
     WorkoutTypeResponse toResponse(WorkoutType workoutType);
 
-    @Mapping(target="allowHealthGroup", ignore = true)
-    @Mapping(target="id", ignore = true)
-    @Mapping(target="isActive", ignore = true)
+    @Mapping(target = "allowedHealthGroups", ignore = true)
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "isActive", ignore = true)
     WorkoutType toEntity(WorkoutTypeRequest request);
 }

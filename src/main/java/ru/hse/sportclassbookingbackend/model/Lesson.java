@@ -58,6 +58,10 @@ public class Lesson {
     @Column(name = "notes")
     private String notes;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "campus_id", nullable = false)
+    private Campus campus;
+
     @OneToMany(mappedBy = "lesson", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<Sheet> sheets = new ArrayList<>();
 

@@ -2,6 +2,7 @@ package ru.hse.sportclassbookingbackend.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.hse.sportclassbookingbackend.dto.workouttype.WorkoutTypePatchRequest;
 import ru.hse.sportclassbookingbackend.dto.workouttype.WorkoutTypeRequest;
 import ru.hse.sportclassbookingbackend.dto.workouttype.WorkoutTypeResponse;
@@ -13,7 +14,9 @@ import ru.hse.sportclassbookingbackend.model.WorkoutType;
 import ru.hse.sportclassbookingbackend.repository.HealthGroupRepository;
 import ru.hse.sportclassbookingbackend.repository.WorkoutTypeRepository;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -26,6 +29,7 @@ public class WorkoutTypeServiceImpl implements WorkoutTypeService {
 
     private final WorkoutTypeMapper workoutTypeMapper;
 
+    @Transactional(readOnly = true)
     public List<WorkoutTypeResponse> getAll() {
         return workoutTypeRepository.findAllByIsActiveTrue()
                 .stream()
@@ -33,6 +37,7 @@ public class WorkoutTypeServiceImpl implements WorkoutTypeService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public WorkoutTypeResponse getById(UUID id) {
         WorkoutType workoutType = workoutTypeRepository.findByIdAndIsActiveTrue(id)
                 .orElseThrow(() -> new NotFoundException("Workout type with id: " + id + " was not found"));
@@ -40,17 +45,16 @@ public class WorkoutTypeServiceImpl implements WorkoutTypeService {
         return workoutTypeMapper.toResponse(workoutType);
     }
 
+    @Transactional
     public WorkoutTypeResponse create(WorkoutTypeRequest request) {
-        HealthGroup healthGroup = healthGroupRepository.findById(request.allowHealthGroupId())
-                .orElseThrow(() -> new BadRequestException("Health group with id: " + request.allowHealthGroupId() + " was not found"));
-
         WorkoutType workoutType = workoutTypeMapper.toEntity(request);
-        workoutType.setAllowHealthGroup(healthGroup);
+        workoutType.setAllowedHealthGroups(findHealthGroupsOrThrow(request.allowedHealthGroupIds()));
         workoutType.setIsActive(true);
 
         return workoutTypeMapper.toResponse(workoutTypeRepository.save(workoutType));
     }
 
+    @Transactional
     public WorkoutTypeResponse update(UUID id, WorkoutTypePatchRequest request) {
         WorkoutType workoutType = workoutTypeRepository.findByIdAndIsActiveTrue(id)
                 .orElseThrow(() -> new NotFoundException("Workout type with id: " + id + " was not found"));
@@ -58,10 +62,8 @@ public class WorkoutTypeServiceImpl implements WorkoutTypeService {
         if (request.title() != null) {
             workoutType.setTitle(request.title());
         }
-        if (request.allowHealthGroupId() != null) {
-            HealthGroup healthGroup = healthGroupRepository.findById(request.allowHealthGroupId())
-                    .orElseThrow(() -> new BadRequestException("Health group with id: " + request.allowHealthGroupId() + " was not found"));
-            workoutType.setAllowHealthGroup(healthGroup);
+        if (request.allowedHealthGroupIds() != null) {
+            workoutType.setAllowedHealthGroups(findHealthGroupsOrThrow(request.allowedHealthGroupIds()));
         }
 
         return workoutTypeMapper.toResponse(workoutTypeRepository.save(workoutType));
@@ -72,5 +74,13 @@ public class WorkoutTypeServiceImpl implements WorkoutTypeService {
             wt.setIsActive(false);
             workoutTypeRepository.save(wt);
         });
+    }
+
+    private Set<HealthGroup> findHealthGroupsOrThrow(Set<Integer> ids) {
+        List<HealthGroup> found = healthGroupRepository.findAllById(ids);
+        if (found.size() != ids.size()) {
+            throw new BadRequestException("Some health group ids were not found");
+        }
+        return new HashSet<>(found);
     }
 }

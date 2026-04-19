@@ -19,7 +19,9 @@ public record RegisterStudentRequest(
         @NotBlank
         String password,
         @NotNull
-        UUID groupId
+        UUID groupId,
+        @NotNull
+        Integer campusId
 ) {
 
 }

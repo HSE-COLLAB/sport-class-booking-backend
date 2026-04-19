@@ -13,12 +13,14 @@ import ru.hse.sportclassbookingbackend.exception.ConflictException;
 import ru.hse.sportclassbookingbackend.exception.UnauthorizedException;
 import ru.hse.sportclassbookingbackend.mapper.StudentMapper;
 import ru.hse.sportclassbookingbackend.mapper.TeacherMapper;
+import ru.hse.sportclassbookingbackend.model.Campus;
 import ru.hse.sportclassbookingbackend.model.HealthGroup;
 import ru.hse.sportclassbookingbackend.model.Role;
 import ru.hse.sportclassbookingbackend.model.Student;
 import ru.hse.sportclassbookingbackend.model.StudentGroup;
 import ru.hse.sportclassbookingbackend.model.Teacher;
 import ru.hse.sportclassbookingbackend.model.User;
+import ru.hse.sportclassbookingbackend.repository.CampusRepository;
 import ru.hse.sportclassbookingbackend.repository.HealthGroupRepository;
 import ru.hse.sportclassbookingbackend.repository.StudentGroupRepository;
 import ru.hse.sportclassbookingbackend.repository.UserRepository;
@@ -34,6 +36,8 @@ public class AuthServiceImpl implements AuthService {
     private final StudentGroupRepository studentGroupRepository;
 
     private final HealthGroupRepository healthGroupRepository;
+
+    private final CampusRepository campusRepository;
 
     private final UserRepository userRepository;
 
@@ -57,6 +61,7 @@ public class AuthServiceImpl implements AuthService {
         student.setGroup(sg);
         student.setRole(Role.STUDENT);
         student.setHealthGroup(healthGroupRepository.getReferenceById(HealthGroup.DEFAULT_HEALTH_GROUP_ID));
+        student.setCampus(findCampusOrThrow(request.campusId()));
         return commonRegisterStage(student);
     }
 
@@ -66,6 +71,7 @@ public class AuthServiceImpl implements AuthService {
         Teacher teacher = teacherMapper.toEntity(request);
         checkEmailNotExists(teacher.getEmail());
         teacher.setRole(Role.TEACHER);
+        teacher.setCampus(findCampusOrThrow(request.campusId()));
         return commonRegisterStage(teacher);
     }
 
@@ -101,6 +107,11 @@ public class AuthServiceImpl implements AuthService {
         if (userRepository.existsByEmail(email))
             throw new ConflictException("User with email " + email + " already exists");
 
+    }
+
+    private Campus findCampusOrThrow(Integer campusId) {
+        return campusRepository.findById(campusId)
+                .orElseThrow(() -> new BadRequestException("Campus with id " + campusId + " not found"));
     }
 
     private AuthResponse commonRegisterStage(User user){

@@ -11,5 +11,6 @@ public interface TeacherMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "role", ignore = true)
+    @Mapping(target = "campus", ignore = true)
     Teacher toEntity(RegisterTeacherRequest req);
 }

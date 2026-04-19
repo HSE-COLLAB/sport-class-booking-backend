@@ -1,0 +1,44 @@
+package ru.hse.sportclassbookingbackend.repository;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import ru.hse.sportclassbookingbackend.model.Lesson;
+
+import java.time.OffsetDateTime;
+import java.util.UUID;
+
+public interface LessonRepository extends JpaRepository<Lesson, UUID> {
+
+    @Query("""
+            SELECT l FROM Lesson l
+            JOIN FETCH l.workoutType wt
+            JOIN FETCH l.teacher t
+            JOIN FETCH l.campus c
+            WHERE (cast(:workoutTypeId as uuid) IS NULL OR l.workoutType.id = :workoutTypeId)
+            AND (cast(:teacherId as uuid) IS NULL OR l.teacher.id = :teacherId)
+            AND (cast(:campusId as integer) IS NULL OR l.campus.id = :campusId)
+            AND (cast(:from as timestamp) IS NULL OR l.startTime >= :from)
+            AND (cast(:to as timestamp) IS NULL OR l.startTime <= :to)
+            AND (cast(:place as string) IS NULL OR LOWER(l.place) LIKE LOWER(CONCAT('%', cast(:place as string), '%')))
+            AND (
+                cast(:status as string) = 'UPCOMING' AND l.startTime > :now
+                OR cast(:status as string) = 'ONGOING' AND l.startTime <= :now AND l.endTime >= :now
+                OR cast(:status as string) = 'PAST' AND l.endTime < :now
+                OR cast(:status as string) IS NULL AND l.endTime >= :now
+            )
+            """)
+    Page<Lesson> findAllWithFilters(
+            @Param("workoutTypeId") UUID workoutTypeId,
+            @Param("teacherId") UUID teacherId,
+            @Param("campusId") Integer campusId,
+            @Param("from") OffsetDateTime from,
+            @Param("to") OffsetDateTime to,
+            @Param("place") String place,
+            @Param("status") String status,
+            @Param("now") OffsetDateTime now,
+            Pageable pageable
+    );
+}
