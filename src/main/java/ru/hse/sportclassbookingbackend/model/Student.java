@@ -35,6 +35,10 @@ public class Student extends User {
     @JoinColumn(name = "health_group_id")
     private HealthGroup healthGroup;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "campus_id", nullable = false)
+    private Campus campus;
+
     @OneToMany(mappedBy = "student", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<Sheet> sheets = new ArrayList<>();
 }

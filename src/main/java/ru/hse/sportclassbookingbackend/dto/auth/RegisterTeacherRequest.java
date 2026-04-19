@@ -2,6 +2,7 @@ package ru.hse.sportclassbookingbackend.dto.auth;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 public record RegisterTeacherRequest(
         @NotBlank
@@ -16,6 +17,8 @@ public record RegisterTeacherRequest(
         @NotBlank
         String password,
         @NotBlank
-        String position
+        String position,
+        @NotNull
+        Integer campusId
 ) {
 }

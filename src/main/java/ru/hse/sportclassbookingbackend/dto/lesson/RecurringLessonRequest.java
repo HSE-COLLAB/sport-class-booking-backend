@@ -25,13 +25,14 @@ public record RecurringLessonRequest(
         Integer totalPlaces,
         @NotNull
         UUID workoutTypeId,
-        UUID teacherId,
         String notes,
         @NotEmpty
         Set<DayOfWeek> daysOfWeek,
         @NotNull @Future
         LocalDate startDate,
         @NotNull @Future
-        LocalDate endDate
+        LocalDate endDate,
+        @NotNull
+        Integer campusId
 ) {
 }

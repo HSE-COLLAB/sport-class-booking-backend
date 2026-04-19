@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -36,11 +37,13 @@ public class StudentGroupController {
     // Реализовать когда будет готов студентский функционал
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<StudentGroupResponse> create(@RequestBody @Valid StudentGroupRequest studentGroupRequest) {
         return ResponseEntity.status(HttpStatus.CREATED).body(studentGroupService.create(studentGroupRequest));
     }
 
     @PatchMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<StudentGroupResponse> update(
             @PathVariable UUID id,
             @RequestBody @Valid StudentGroupPatchRequest request
@@ -49,6 +52,7 @@ public class StudentGroupController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         studentGroupService.delete(id);
         return ResponseEntity.noContent().build();

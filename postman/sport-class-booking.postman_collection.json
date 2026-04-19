@@ -1,0 +1,626 @@
+{
+  "info": {
+    "name": "Sport Class Booking API",
+    "description": "Коллекция для ручного тестирования API.\n\n**Как тестировать:**\n1. Запустить приложение с профилем `local`\n2. В `application-local.yml` задать `security.development.default-user.role` равное нужной роли (STUDENT / TEACHER / ADMIN)\n3. Перезапустить приложение\n4. Запускать соответствующую папку (As STUDENT / As TEACHER / As ADMIN)\n\n**Тестовые пользователи:**\n- Admin1: `11111111-1111-1111-1111-111111111111`\n- Teacher1 (НН): `33333333-3333-3333-3333-333333333333`\n- Teacher2 (Москва): `44444444-4444-4444-4444-444444444444`\n- Teacher3 (Пермь): `77777777-7777-7777-7777-777777777777`\n- Student1 (НН, ПИ-2024, основная группа): `55555555-5555-5555-5555-555555555555`\n\nПароль у всех: `test`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api",
+      "type": "string"
+    },
+    {
+      "key": "teacher1Id",
+      "value": "33333333-3333-3333-3333-333333333333"
+    },
+    {
+      "key": "teacher2Id",
+      "value": "44444444-4444-4444-4444-444444444444"
+    },
+    {
+      "key": "studentGroupId",
+      "value": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+    },
+    {
+      "key": "workoutTypeVolleyballId",
+      "value": "10000000-0000-0000-0000-000000000001"
+    },
+    {
+      "key": "workoutTypeBasketballId",
+      "value": "10000000-0000-0000-0000-000000000002"
+    },
+    {
+      "key": "workoutTypePilatesId",
+      "value": "10000000-0000-0000-0000-000000000003"
+    },
+    {
+      "key": "workoutTypeChessId",
+      "value": "10000000-0000-0000-0000-000000000004"
+    },
+    {
+      "key": "lessonTeacher1Id",
+      "value": "20000000-0000-0000-0000-000000000001",
+      "description": "Урок Teacher1 (Волейбол утро, НН)"
+    },
+    {
+      "key": "lessonTeacher2Id",
+      "value": "20000000-0000-0000-0000-000000000003",
+      "description": "Урок Teacher2 (Пилатес, Москва)"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth (public)",
+      "description": "Публичные ручки — работают без авторизации",
+      "item": [
+        {
+          "name": "Register Student",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Response has accessToken', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.accessToken).to.be.a('string');",
+                  "  pm.expect(json.refreshToken).to.be.a('string');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/register/student", "host": ["{{baseUrl}}"], "path": ["auth", "register", "student"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"New\",\n  \"lastName\": \"Student\",\n  \"middleName\": \"Test\",\n  \"email\": \"newstudent@mail.ru\",\n  \"password\": \"password123\",\n  \"groupId\": \"{{studentGroupId}}\",\n  \"campusId\": 3\n}"
+            }
+          }
+        },
+        {
+          "name": "Register Student (conflict - existing email)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status is 409', () => pm.response.to.have.status(409));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/register/student", "host": ["{{baseUrl}}"], "path": ["auth", "register", "student"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Dup\",\n  \"lastName\": \"User\",\n  \"middleName\": \"T.\",\n  \"email\": \"student1@mail.ru\",\n  \"password\": \"password\",\n  \"groupId\": \"{{studentGroupId}}\",\n  \"campusId\": 3\n}"
+            }
+          }
+        },
+        {
+          "name": "Register Student (invalid campus)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status is 400', () => pm.response.to.have.status(400));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/register/student", "host": ["{{baseUrl}}"], "path": ["auth", "register", "student"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"X\",\n  \"lastName\": \"Y\",\n  \"middleName\": \"Z\",\n  \"email\": \"unique999@mail.ru\",\n  \"password\": \"password\",\n  \"groupId\": \"{{studentGroupId}}\",\n  \"campusId\": 9999\n}"
+            }
+          }
+        },
+        {
+          "name": "Register Teacher",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status is 201', () => pm.response.to.have.status(201));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/register/teacher", "host": ["{{baseUrl}}"], "path": ["auth", "register", "teacher"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"New\",\n  \"lastName\": \"Teacher\",\n  \"middleName\": \"Test\",\n  \"email\": \"newteacher@mail.ru\",\n  \"password\": \"password123\",\n  \"position\": \"Доцент\",\n  \"campusId\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('refreshToken', json.refreshToken);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student1@mail.ru\",\n  \"password\": \"test\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login (wrong password)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status is 401', () => pm.response.to.have.status(401));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student1@mail.ru\",\n  \"password\": \"wrongpassword\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Refresh",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status is 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "X-Refresh-Token", "value": "{{refreshToken}}" }],
+            "url": { "raw": "{{baseUrl}}/auth/refresh", "host": ["{{baseUrl}}"], "path": ["auth", "refresh"] }
+          }
+        },
+        {
+          "name": "Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status is 204', () => pm.response.to.have.status(204));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "X-Refresh-Token", "value": "{{refreshToken}}" }],
+            "url": { "raw": "{{baseUrl}}/auth/logout", "host": ["{{baseUrl}}"], "path": ["auth", "logout"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "As STUDENT",
+      "description": "Установить в application-local.yml: `security.development.default-user.role: STUDENT`\n\nИспользуется Student1 (НН, ПИ-2024, основная группа)",
+      "item": [
+        {
+          "name": "GET /health-groups — 200",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/health-groups", "host": ["{{baseUrl}}"], "path": ["health-groups"] } }
+        },
+        {
+          "name": "PUT /health-groups/1 — 403",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 403', () => pm.response.to.have.status(403));"],"type":"text/javascript"}}],
+          "request": {
+            "method": "PUT",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "url": { "raw": "{{baseUrl}}/health-groups/1", "host": ["{{baseUrl}}"], "path": ["health-groups","1"] },
+            "body": {"mode":"raw","raw":"{\n  \"description\": \"Hack\"\n}"}
+          }
+        },
+        {
+          "name": "GET /student-groups — 200",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/student-groups", "host": ["{{baseUrl}}"], "path": ["student-groups"] } }
+        },
+        {
+          "name": "POST /student-groups — 403",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 403', () => pm.response.to.have.status(403));"],"type":"text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "url": { "raw": "{{baseUrl}}/student-groups", "host": ["{{baseUrl}}"], "path": ["student-groups"] },
+            "body": {"mode":"raw","raw":"{\n  \"faculty\": \"X\",\n  \"academicMajor\": \"Y\",\n  \"groupNumber\": \"Z-2024\"\n}"}
+          }
+        },
+        {
+          "name": "GET /workout-types — 200",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/workout-types", "host": ["{{baseUrl}}"], "path": ["workout-types"] } }
+        },
+        {
+          "name": "POST /workout-types — 403",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 403', () => pm.response.to.have.status(403));"],"type":"text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "url": { "raw": "{{baseUrl}}/workout-types", "host": ["{{baseUrl}}"], "path": ["workout-types"] },
+            "body": {"mode":"raw","raw":"{\n  \"title\": \"Hack\",\n  \"allowedHealthGroupIds\": [1]\n}"}
+          }
+        },
+        {
+          "name": "GET /lessons — 200 (все уроки)",
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has content array', () => pm.expect(pm.response.json().content).to.be.an('array'));"
+          ],"type":"text/javascript"}}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/lessons", "host": ["{{baseUrl}}"], "path": ["lessons"] } }
+        },
+        {
+          "name": "GET /lessons?status=UPCOMING",
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "const lessons = pm.response.json().content;",
+            "pm.test('All lessons are upcoming', () => lessons.forEach(l => pm.expect(new Date(l.startTime).getTime()).to.be.greaterThan(Date.now())));"
+          ],"type":"text/javascript"}}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/lessons?status=UPCOMING", "host": ["{{baseUrl}}"], "path": ["lessons"], "query":[{"key":"status","value":"UPCOMING"}] } }
+        },
+        {
+          "name": "GET /lessons?status=PAST",
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "const lessons = pm.response.json().content;",
+            "pm.test('All lessons are past', () => lessons.forEach(l => pm.expect(new Date(l.endTime).getTime()).to.be.lessThan(Date.now())));"
+          ],"type":"text/javascript"}}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/lessons?status=PAST", "host": ["{{baseUrl}}"], "path": ["lessons"], "query":[{"key":"status","value":"PAST"}] } }
+        },
+        {
+          "name": "GET /lessons?teacherId=Teacher1",
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "const lessons = pm.response.json().content;",
+            "pm.test('All lessons are Teacher1', () => lessons.forEach(l => pm.expect(l.teacher.id).to.eql(pm.collectionVariables.get('teacher1Id'))));"
+          ],"type":"text/javascript"}}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/lessons?teacherId={{teacher1Id}}", "host": ["{{baseUrl}}"], "path": ["lessons"], "query":[{"key":"teacherId","value":"{{teacher1Id}}"}] } }
+        },
+        {
+          "name": "GET /lessons?campusId=3 (НН)",
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "const lessons = pm.response.json().content;",
+            "pm.test('All lessons are in campus 3', () => lessons.forEach(l => pm.expect(l.campus.id).to.eql(3)));"
+          ],"type":"text/javascript"}}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/lessons?campusId=3", "host": ["{{baseUrl}}"], "path": ["lessons"], "query":[{"key":"campusId","value":"3"}] } }
+        },
+        {
+          "name": "GET /lessons?workoutTypeId=Volleyball",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/lessons?workoutTypeId={{workoutTypeVolleyballId}}", "host": ["{{baseUrl}}"], "path": ["lessons"], "query":[{"key":"workoutTypeId","value":"{{workoutTypeVolleyballId}}"}] } }
+        },
+        {
+          "name": "GET /lessons?place=Зал",
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "const lessons = pm.response.json().content;",
+            "pm.test('All places contain \"Зал\"', () => lessons.forEach(l => pm.expect(l.place.toLowerCase()).to.include('зал')));"
+          ],"type":"text/javascript"}}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/lessons?place=Зал", "host": ["{{baseUrl}}"], "path": ["lessons"], "query":[{"key":"place","value":"Зал"}] } }
+        },
+        {
+          "name": "GET /lessons (pagination: size=2)",
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "pm.test('Content length <= 2', () => pm.expect(pm.response.json().content.length).to.be.lessThan(3));"
+          ],"type":"text/javascript"}}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/lessons?page=0&size=2", "host": ["{{baseUrl}}"], "path": ["lessons"], "query":[{"key":"page","value":"0"},{"key":"size","value":"2"}] } }
+        },
+        {
+          "name": "GET /lessons/{id} — 200",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/lessons/{{lessonTeacher1Id}}", "host": ["{{baseUrl}}"], "path": ["lessons","{{lessonTeacher1Id}}"] } }
+        },
+        {
+          "name": "GET /lessons/{id} — 404 (не существует)",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 404', () => pm.response.to.have.status(404));"],"type":"text/javascript"}}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/lessons/00000000-0000-0000-0000-000000000000", "host": ["{{baseUrl}}"], "path": ["lessons","00000000-0000-0000-0000-000000000000"] } }
+        },
+        {
+          "name": "POST /lessons — 403",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 403', () => pm.response.to.have.status(403));"],"type":"text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "url": { "raw": "{{baseUrl}}/lessons", "host": ["{{baseUrl}}"], "path": ["lessons"] },
+            "body": {"mode":"raw","raw":"{\n  \"title\": \"Hack\",\n  \"place\": \"X\",\n  \"startTime\": \"2099-01-01T10:00:00\",\n  \"endTime\": \"2099-01-01T11:00:00\",\n  \"totalPlaces\": 10,\n  \"workoutTypeId\": \"{{workoutTypeVolleyballId}}\",\n  \"campusId\": 3\n}"}
+          }
+        },
+        {
+          "name": "PATCH /lessons/{id} — 403",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 403', () => pm.response.to.have.status(403));"],"type":"text/javascript"}}],
+          "request": {
+            "method": "PATCH",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "url": { "raw": "{{baseUrl}}/lessons/{{lessonTeacher1Id}}", "host": ["{{baseUrl}}"], "path": ["lessons","{{lessonTeacher1Id}}"] },
+            "body": {"mode":"raw","raw":"{\n  \"title\": \"Modified\"\n}"}
+          }
+        },
+        {
+          "name": "DELETE /lessons/{id} — 403",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 403', () => pm.response.to.have.status(403));"],"type":"text/javascript"}}],
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/lessons/{{lessonTeacher1Id}}", "host": ["{{baseUrl}}"], "path": ["lessons","{{lessonTeacher1Id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "As TEACHER",
+      "description": "Установить в application-local.yml: `security.development.default-user.role: TEACHER`\n\nИспользуется Teacher1 (НН, кампус 3). Все уроки будут создаваться автоматически в его кампусе.",
+      "item": [
+        {
+          "name": "GET /lessons — 200",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/lessons", "host": ["{{baseUrl}}"], "path": ["lessons"] } }
+        },
+        {
+          "name": "POST /lessons — 201 (создаётся в кампусе Teacher1)",
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+            "const lesson = pm.response.json();",
+            "pm.test('Teacher is Teacher1', () => pm.expect(lesson.teacher.id).to.eql(pm.collectionVariables.get('teacher1Id')));",
+            "pm.test('Campus is NN (3)', () => pm.expect(lesson.campus.id).to.eql(3));",
+            "pm.collectionVariables.set('createdLessonId', lesson.id);"
+          ],"type":"text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "url": { "raw": "{{baseUrl}}/lessons", "host": ["{{baseUrl}}"], "path": ["lessons"] },
+            "body": {"mode":"raw","raw":"{\n  \"title\": \"Новый волейбол\",\n  \"place\": \"Зал 3\",\n  \"startTime\": \"2099-01-01T10:00:00\",\n  \"endTime\": \"2099-01-01T11:30:00\",\n  \"totalPlaces\": 15,\n  \"workoutTypeId\": \"{{workoutTypeVolleyballId}}\",\n  \"campusId\": 3,\n  \"notes\": \"Тестовое занятие\"\n}"}
+          }
+        },
+        {
+          "name": "POST /lessons — 400 (endTime <= startTime)",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 400', () => pm.response.to.have.status(400));"],"type":"text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "url": { "raw": "{{baseUrl}}/lessons", "host": ["{{baseUrl}}"], "path": ["lessons"] },
+            "body": {"mode":"raw","raw":"{\n  \"title\": \"Invalid\",\n  \"place\": \"X\",\n  \"startTime\": \"2099-01-01T11:00:00\",\n  \"endTime\": \"2099-01-01T10:00:00\",\n  \"totalPlaces\": 5,\n  \"workoutTypeId\": \"{{workoutTypeVolleyballId}}\",\n  \"campusId\": 3\n}"}
+          }
+        },
+        {
+          "name": "POST /lessons — 400 (startTime в прошлом)",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 400', () => pm.response.to.have.status(400));"],"type":"text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "url": { "raw": "{{baseUrl}}/lessons", "host": ["{{baseUrl}}"], "path": ["lessons"] },
+            "body": {"mode":"raw","raw":"{\n  \"title\": \"Past\",\n  \"place\": \"X\",\n  \"startTime\": \"2000-01-01T10:00:00\",\n  \"endTime\": \"2000-01-01T11:00:00\",\n  \"totalPlaces\": 5,\n  \"workoutTypeId\": \"{{workoutTypeVolleyballId}}\",\n  \"campusId\": 3\n}"}
+          }
+        },
+        {
+          "name": "POST /lessons — 400 (несуществующий workoutType)",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 400', () => pm.response.to.have.status(400));"],"type":"text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "url": { "raw": "{{baseUrl}}/lessons", "host": ["{{baseUrl}}"], "path": ["lessons"] },
+            "body": {"mode":"raw","raw":"{\n  \"title\": \"X\",\n  \"place\": \"Y\",\n  \"startTime\": \"2099-01-01T10:00:00\",\n  \"endTime\": \"2099-01-01T11:00:00\",\n  \"totalPlaces\": 5,\n  \"workoutTypeId\": \"00000000-0000-0000-0000-000000000000\",\n  \"campusId\": 3\n}"}
+          }
+        },
+        {
+          "name": "POST /lessons/recurring — 201",
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+            "const r = pm.response.json();",
+            "pm.test('Has count > 0', () => pm.expect(r.count).to.be.greaterThan(0));",
+            "pm.test('Has firstDate and lastDate', () => { pm.expect(r.firstDate).to.be.a('string'); pm.expect(r.lastDate).to.be.a('string'); });"
+          ],"type":"text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "url": { "raw": "{{baseUrl}}/lessons/recurring", "host": ["{{baseUrl}}"], "path": ["lessons","recurring"] },
+            "body": {"mode":"raw","raw":"{\n  \"title\": \"Регулярный волейбол\",\n  \"place\": \"Зал 1\",\n  \"startTime\": \"10:00\",\n  \"endTime\": \"11:30\",\n  \"totalPlaces\": 20,\n  \"workoutTypeId\": \"{{workoutTypeVolleyballId}}\",\n  \"campusId\": 3,\n  \"daysOfWeek\": [\"MONDAY\", \"WEDNESDAY\", \"FRIDAY\"],\n  \"startDate\": \"2099-09-01\",\n  \"endDate\": \"2099-12-25\"\n}"}
+          }
+        },
+        {
+          "name": "POST /lessons/recurring — 400 (endDate > 365 дней)",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 400', () => pm.response.to.have.status(400));"],"type":"text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "url": { "raw": "{{baseUrl}}/lessons/recurring", "host": ["{{baseUrl}}"], "path": ["lessons","recurring"] },
+            "body": {"mode":"raw","raw":"{\n  \"title\": \"Too long\",\n  \"place\": \"X\",\n  \"startTime\": \"10:00\",\n  \"endTime\": \"11:00\",\n  \"totalPlaces\": 10,\n  \"workoutTypeId\": \"{{workoutTypeVolleyballId}}\",\n  \"campusId\": 3,\n  \"daysOfWeek\": [\"MONDAY\"],\n  \"startDate\": \"2099-01-01\",\n  \"endDate\": \"2101-01-01\"\n}"}
+          }
+        },
+        {
+          "name": "PATCH /lessons/{own} — 200",
+          "event": [{"listen":"test","script":{"exec":[
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "pm.test('Title updated', () => pm.expect(pm.response.json().title).to.eql('Волейбол утро (обновлён)'));"
+          ],"type":"text/javascript"}}],
+          "request": {
+            "method": "PATCH",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "url": { "raw": "{{baseUrl}}/lessons/{{lessonTeacher1Id}}", "host": ["{{baseUrl}}"], "path": ["lessons","{{lessonTeacher1Id}}"] },
+            "body": {"mode":"raw","raw":"{\n  \"title\": \"Волейбол утро (обновлён)\"\n}"}
+          }
+        },
+        {
+          "name": "PATCH /lessons/{other teacher} — 400",
+          "description": "Teacher1 не может редактировать урок Teacher2",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 400', () => pm.response.to.have.status(400));"],"type":"text/javascript"}}],
+          "request": {
+            "method": "PATCH",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "url": { "raw": "{{baseUrl}}/lessons/{{lessonTeacher2Id}}", "host": ["{{baseUrl}}"], "path": ["lessons","{{lessonTeacher2Id}}"] },
+            "body": {"mode":"raw","raw":"{\n  \"title\": \"Hack\"\n}"}
+          }
+        },
+        {
+          "name": "DELETE /lessons/{other teacher} — 400",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 400', () => pm.response.to.have.status(400));"],"type":"text/javascript"}}],
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/lessons/{{lessonTeacher2Id}}", "host": ["{{baseUrl}}"], "path": ["lessons","{{lessonTeacher2Id}}"] }
+          }
+        },
+        {
+          "name": "DELETE /lessons/{own} — 204",
+          "description": "Удаляет ранее созданный урок (из запроса 'POST /lessons — 201')",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 204', () => pm.response.to.have.status(204));"],"type":"text/javascript"}}],
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/lessons/{{createdLessonId}}", "host": ["{{baseUrl}}"], "path": ["lessons","{{createdLessonId}}"] }
+          }
+        },
+        {
+          "name": "DELETE /lessons/{несуществующий} — 204 (идемпотентно)",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 204', () => pm.response.to.have.status(204));"],"type":"text/javascript"}}],
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/lessons/00000000-0000-0000-0000-000000000000", "host": ["{{baseUrl}}"], "path": ["lessons","00000000-0000-0000-0000-000000000000"] }
+          }
+        },
+        {
+          "name": "POST /workout-types — 201",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 201', () => pm.response.to.have.status(201));"],"type":"text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "url": { "raw": "{{baseUrl}}/workout-types", "host": ["{{baseUrl}}"], "path": ["workout-types"] },
+            "body": {"mode":"raw","raw":"{\n  \"title\": \"Аэробика\",\n  \"allowedHealthGroupIds\": [1, 2]\n}"}
+          }
+        },
+        {
+          "name": "POST /student-groups — 403",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 403', () => pm.response.to.have.status(403));"],"type":"text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "url": { "raw": "{{baseUrl}}/student-groups", "host": ["{{baseUrl}}"], "path": ["student-groups"] },
+            "body": {"mode":"raw","raw":"{\n  \"faculty\": \"X\",\n  \"academicMajor\": \"Y\",\n  \"groupNumber\": \"Z-2024\"\n}"}
+          }
+        },
+        {
+          "name": "PUT /health-groups/1 — 403",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 403', () => pm.response.to.have.status(403));"],"type":"text/javascript"}}],
+          "request": {
+            "method": "PUT",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "url": { "raw": "{{baseUrl}}/health-groups/1", "host": ["{{baseUrl}}"], "path": ["health-groups","1"] },
+            "body": {"mode":"raw","raw":"{\n  \"description\": \"Modified\"\n}"}
+          }
+        }
+      ]
+    },
+    {
+      "name": "As ADMIN",
+      "description": "Установить в application-local.yml: `security.development.default-user.role: ADMIN`\n\nИспользуется Admin1.",
+      "item": [
+        {
+          "name": "POST /student-groups — 201",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 201', () => pm.response.to.have.status(201));"],"type":"text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "url": { "raw": "{{baseUrl}}/student-groups", "host": ["{{baseUrl}}"], "path": ["student-groups"] },
+            "body": {"mode":"raw","raw":"{\n  \"faculty\": \"ФЭН\",\n  \"academicMajor\": \"Экономика\",\n  \"groupNumber\": \"ЭК-2024\"\n}"}
+          }
+        },
+        {
+          "name": "PATCH /student-groups/{id} — 200",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+          "request": {
+            "method": "PATCH",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "url": { "raw": "{{baseUrl}}/student-groups/{{studentGroupId}}", "host": ["{{baseUrl}}"], "path": ["student-groups","{{studentGroupId}}"] },
+            "body": {"mode":"raw","raw":"{\n  \"groupNumber\": \"ПИ-2024-Updated\"\n}"}
+          }
+        },
+        {
+          "name": "PUT /health-groups/1 — 200",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+          "request": {
+            "method": "PUT",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "url": { "raw": "{{baseUrl}}/health-groups/1", "host": ["{{baseUrl}}"], "path": ["health-groups","1"] },
+            "body": {"mode":"raw","raw":"{\n  \"description\": \"Основная группа (обновлено)\"\n}"}
+          }
+        },
+        {
+          "name": "POST /workout-types — 201",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 201', () => pm.response.to.have.status(201));"],"type":"text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "url": { "raw": "{{baseUrl}}/workout-types", "host": ["{{baseUrl}}"], "path": ["workout-types"] },
+            "body": {"mode":"raw","raw":"{\n  \"title\": \"Кроссфит\",\n  \"allowedHealthGroupIds\": [1]\n}"}
+          }
+        },
+        {
+          "name": "POST /lessons — 403 (админ не создаёт уроки)",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 403', () => pm.response.to.have.status(403));"],"type":"text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "url": { "raw": "{{baseUrl}}/lessons", "host": ["{{baseUrl}}"], "path": ["lessons"] },
+            "body": {"mode":"raw","raw":"{\n  \"title\": \"Admin lesson\",\n  \"place\": \"X\",\n  \"startTime\": \"2099-01-01T10:00:00\",\n  \"endTime\": \"2099-01-01T11:00:00\",\n  \"totalPlaces\": 10,\n  \"workoutTypeId\": \"{{workoutTypeVolleyballId}}\",\n  \"campusId\": 3\n}"}
+          }
+        },
+        {
+          "name": "PATCH /lessons/{id} — 403",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 403', () => pm.response.to.have.status(403));"],"type":"text/javascript"}}],
+          "request": {
+            "method": "PATCH",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "url": { "raw": "{{baseUrl}}/lessons/{{lessonTeacher1Id}}", "host": ["{{baseUrl}}"], "path": ["lessons","{{lessonTeacher1Id}}"] },
+            "body": {"mode":"raw","raw":"{\n  \"title\": \"Admin modified\"\n}"}
+          }
+        },
+        {
+          "name": "DELETE /lessons/{id} — 403",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 403', () => pm.response.to.have.status(403));"],"type":"text/javascript"}}],
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/lessons/{{lessonTeacher1Id}}", "host": ["{{baseUrl}}"], "path": ["lessons","{{lessonTeacher1Id}}"] }
+          }
+        },
+        {
+          "name": "GET /lessons — 200 (админ может смотреть)",
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/lessons", "host": ["{{baseUrl}}"], "path": ["lessons"] } }
+        }
+      ]
+    }
+  ]
+}

@@ -16,17 +16,20 @@ import ru.hse.sportclassbookingbackend.dto.lesson.RecurringLessonResponse;
 import ru.hse.sportclassbookingbackend.exception.BadRequestException;
 import ru.hse.sportclassbookingbackend.exception.NotFoundException;
 import ru.hse.sportclassbookingbackend.mapper.LessonMapper;
+import ru.hse.sportclassbookingbackend.model.Campus;
 import ru.hse.sportclassbookingbackend.model.Lesson;
-import ru.hse.sportclassbookingbackend.model.Role;
 import ru.hse.sportclassbookingbackend.model.Teacher;
 import ru.hse.sportclassbookingbackend.model.WorkoutType;
+import ru.hse.sportclassbookingbackend.repository.CampusRepository;
 import ru.hse.sportclassbookingbackend.repository.LessonRepository;
 import ru.hse.sportclassbookingbackend.repository.TeacherRepository;
 import ru.hse.sportclassbookingbackend.repository.WorkoutTypeRepository;
 import ru.hse.sportclassbookingbackend.security.UserPrincipal;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,24 +44,26 @@ public class LessonServiceImpl implements LessonService {
     private final LessonRepository lessonRepository;
     private final WorkoutTypeRepository workoutTypeRepository;
     private final TeacherRepository teacherRepository;
+    private final CampusRepository campusRepository;
     private final LessonMapper lessonMapper;
 
     @Override
-    public Page<LessonResponse> getAll(UUID workoutTypeId, UUID teacherId, OffsetDateTime from, OffsetDateTime to,
-                                       String place, LessonStatus status, Pageable pageable) {
+    @Transactional(readOnly = true)
+    public Page<LessonResponse> getAll(UUID workoutTypeId, UUID teacherId, Integer campusId, OffsetDateTime from,
+                                       OffsetDateTime to, String place, LessonStatus status, Pageable pageable) {
         Sort sort = resolveSort(status);
         Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
         String statusStr = status != null ? status.name() : null;
 
         return lessonRepository.findAllWithFilters(
-                workoutTypeId, teacherId, from, to, place, statusStr, OffsetDateTime.now(), sortedPageable
+                workoutTypeId, teacherId, campusId, from, to, place, statusStr, OffsetDateTime.now(), sortedPageable
         ).map(lessonMapper::toResponse);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public LessonResponse getById(UUID id) {
-        Lesson lesson = findLessonOrThrow(id);
-        return lessonMapper.toResponse(lesson);
+        return lessonMapper.toResponse(findLessonOrThrow(id));
     }
 
     @Override
@@ -66,12 +71,16 @@ public class LessonServiceImpl implements LessonService {
     public LessonResponse create(LessonRequest request, UserPrincipal principal) {
         validateTimeRange(request.startTime(), request.endTime());
 
+        Teacher teacher = findTeacherOrThrow(principal.getId());
         WorkoutType workoutType = findActiveWorkoutTypeOrThrow(request.workoutTypeId());
-        Teacher teacher = resolveTeacher(request.teacherId(), principal);
+        Campus campus = findCampusOrThrow(request.campusId());
 
         Lesson lesson = lessonMapper.toEntity(request);
-        lesson.setWorkoutType(workoutType);
+        lesson.setStartTime(toCampusOffsetDateTime(request.startTime(), campus));
+        lesson.setEndTime(toCampusOffsetDateTime(request.endTime(), campus));
         lesson.setTeacher(teacher);
+        lesson.setCampus(campus);
+        lesson.setWorkoutType(workoutType);
 
         return lessonMapper.toResponse(lessonRepository.save(lesson));
     }
@@ -79,42 +88,13 @@ public class LessonServiceImpl implements LessonService {
     @Override
     @Transactional
     public RecurringLessonResponse createRecurring(RecurringLessonRequest request, UserPrincipal principal) {
-        if (!request.endTime().isAfter(request.startTime())) {
-            throw new BadRequestException("endTime must be after startTime");
-        }
-        if (request.endDate().isBefore(request.startDate())) {
-            throw new BadRequestException("endDate must not be before startDate");
-        }
-        if (request.startDate().plusDays(MAX_RECURRING_DAYS).isBefore(request.endDate())) {
-            throw new BadRequestException("endDate must not be more than " + MAX_RECURRING_DAYS + " days after startDate");
-        }
+        validateRecurringRequest(request);
 
+        Teacher teacher = findTeacherOrThrow(principal.getId());
         WorkoutType workoutType = findActiveWorkoutTypeOrThrow(request.workoutTypeId());
-        Teacher teacher = resolveTeacher(request.teacherId(), principal);
+        Campus campus = findCampusOrThrow(request.campusId());
 
-        List<Lesson> lessons = new ArrayList<>();
-        LocalDate current = request.startDate();
-
-        while (!current.isAfter(request.endDate())) {
-            if (request.daysOfWeek().contains(current.getDayOfWeek())) {
-                OffsetDateTime startDateTime = current.atTime(request.startTime()).atOffset(ZoneOffset.UTC);
-                OffsetDateTime endDateTime = current.atTime(request.endTime()).atOffset(ZoneOffset.UTC);
-
-                if (startDateTime.isAfter(OffsetDateTime.now())) {
-                    Lesson lesson = new Lesson();
-                    lesson.setTitle(request.title());
-                    lesson.setPlace(request.place());
-                    lesson.setStartTime(startDateTime);
-                    lesson.setEndTime(endDateTime);
-                    lesson.setTotalPlaces(request.totalPlaces());
-                    lesson.setNotes(request.notes());
-                    lesson.setWorkoutType(workoutType);
-                    lesson.setTeacher(teacher);
-                    lessons.add(lesson);
-                }
-            }
-            current = current.plusDays(1);
-        }
+        List<Lesson> lessons = generateLessons(request, teacher, workoutType, campus);
 
         if (lessons.isEmpty()) {
             throw new BadRequestException("No lessons could be created for the given schedule");
@@ -134,34 +114,22 @@ public class LessonServiceImpl implements LessonService {
         Lesson lesson = findLessonOrThrow(id);
         checkOwnership(lesson, principal);
 
-        if (request.title() != null) {
-            lesson.setTitle(request.title());
+        lessonMapper.updateFromPatch(request, lesson);
+
+        if (request.workoutTypeId() != null) {
+            lesson.setWorkoutType(findActiveWorkoutTypeOrThrow(request.workoutTypeId()));
         }
-        if (request.place() != null) {
-            lesson.setPlace(request.place());
+        if (request.campusId() != null) {
+            lesson.setCampus(findCampusOrThrow(request.campusId()));
         }
         if (request.startTime() != null) {
-            lesson.setStartTime(request.startTime());
+            lesson.setStartTime(toCampusOffsetDateTime(request.startTime(), lesson.getCampus()));
         }
         if (request.endTime() != null) {
-            lesson.setEndTime(request.endTime());
+            lesson.setEndTime(toCampusOffsetDateTime(request.endTime(), lesson.getCampus()));
         }
         if (request.startTime() != null || request.endTime() != null) {
             validateTimeRange(lesson.getStartTime(), lesson.getEndTime());
-        }
-        if (request.totalPlaces() != null) {
-            lesson.setTotalPlaces(request.totalPlaces());
-        }
-        if (request.workoutTypeId() != null) {
-            WorkoutType workoutType = findActiveWorkoutTypeOrThrow(request.workoutTypeId());
-            lesson.setWorkoutType(workoutType);
-        }
-        if (request.teacherId() != null) {
-            Teacher teacher = findTeacherOrThrow(request.teacherId());
-            lesson.setTeacher(teacher);
-        }
-        if (request.notes() != null) {
-            lesson.setNotes(request.notes());
         }
 
         return lessonMapper.toResponse(lessonRepository.save(lesson));
@@ -176,22 +144,59 @@ public class LessonServiceImpl implements LessonService {
         });
     }
 
-    private Teacher resolveTeacher(UUID teacherIdFromRequest, UserPrincipal principal) {
-        if (principal.getRole() == Role.ADMIN) {
-            if (teacherIdFromRequest == null) {
-                throw new BadRequestException("teacherId is required for admin");
-            }
-            return findTeacherOrThrow(teacherIdFromRequest);
+    private void validateRecurringRequest(RecurringLessonRequest request) {
+        if (!request.endTime().isAfter(request.startTime())) {
+            throw new BadRequestException("endTime must be after startTime");
         }
-        return findTeacherOrThrow(principal.getId());
+        if (request.endDate().isBefore(request.startDate())) {
+            throw new BadRequestException("endDate must not be before startDate");
+        }
+        if (request.startDate().plusDays(MAX_RECURRING_DAYS).isBefore(request.endDate())) {
+            throw new BadRequestException("endDate must not be more than " + MAX_RECURRING_DAYS + " days after startDate");
+        }
+    }
+
+    private List<Lesson> generateLessons(RecurringLessonRequest request, Teacher teacher,
+                                         WorkoutType workoutType, Campus campus) {
+        List<Lesson> lessons = new ArrayList<>();
+        LocalDate current = request.startDate();
+        ZoneId zoneId = ZoneId.of(campus.getTimezone());
+
+        while (!current.isAfter(request.endDate())) {
+            if (request.daysOfWeek().contains(current.getDayOfWeek())) {
+                ZoneOffset offset = zoneId.getRules().getOffset(current.atTime(request.startTime()));
+                OffsetDateTime startDateTime = current.atTime(request.startTime()).atOffset(offset);
+                OffsetDateTime endDateTime = current.atTime(request.endTime()).atOffset(offset);
+
+                if (startDateTime.isAfter(OffsetDateTime.now())) {
+                    Lesson lesson = lessonMapper.toEntityFromRecurring(request, startDateTime, endDateTime);
+                    lesson.setTeacher(teacher);
+                    lesson.setCampus(campus);
+                    lesson.setWorkoutType(workoutType);
+                    lessons.add(lesson);
+                }
+            }
+            current = current.plusDays(1);
+        }
+
+        return lessons;
+    }
+
+    private OffsetDateTime toCampusOffsetDateTime(LocalDateTime localDateTime, Campus campus) {
+        ZoneId zoneId = ZoneId.of(campus.getTimezone());
+        ZoneOffset offset = zoneId.getRules().getOffset(localDateTime);
+        return localDateTime.atOffset(offset);
     }
 
     private void checkOwnership(Lesson lesson, UserPrincipal principal) {
-        if (principal.getRole() == Role.ADMIN) {
-            return;
-        }
         if (!lesson.getTeacher().getId().equals(principal.getId())) {
             throw new BadRequestException("You can only modify your own lessons");
+        }
+    }
+
+    private void validateTimeRange(LocalDateTime startTime, LocalDateTime endTime) {
+        if (!endTime.isAfter(startTime)) {
+            throw new BadRequestException("endTime must be after startTime");
         }
     }
 
@@ -214,6 +219,11 @@ public class LessonServiceImpl implements LessonService {
     private Teacher findTeacherOrThrow(UUID id) {
         return teacherRepository.findById(id)
                 .orElseThrow(() -> new BadRequestException("Teacher with id: " + id + " was not found"));
+    }
+
+    private Campus findCampusOrThrow(Integer id) {
+        return campusRepository.findById(id)
+                .orElseThrow(() -> new BadRequestException("Campus with id: " + id + " was not found"));
     }
 
     private Sort resolveSort(LessonStatus status) {

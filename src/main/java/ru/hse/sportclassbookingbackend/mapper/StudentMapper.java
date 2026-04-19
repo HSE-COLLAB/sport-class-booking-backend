@@ -13,5 +13,6 @@ public interface StudentMapper {
     @Mapping(target = "sheets", ignore = true)
     @Mapping(target = "group", ignore = true)
     @Mapping(target = "healthGroup", ignore = true)
+    @Mapping(target = "campus", ignore = true)
     Student toEntity(RegisterStudentRequest req);
 }

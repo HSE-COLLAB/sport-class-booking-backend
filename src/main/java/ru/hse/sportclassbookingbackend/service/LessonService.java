@@ -15,8 +15,8 @@ import java.util.UUID;
 
 public interface LessonService {
 
-    Page<LessonResponse> getAll(UUID workoutTypeId, UUID teacherId, OffsetDateTime from, OffsetDateTime to,
-                                String place, LessonStatus status, Pageable pageable);
+    Page<LessonResponse> getAll(UUID workoutTypeId, UUID teacherId, Integer campusId, OffsetDateTime from,
+                                OffsetDateTime to, String place, LessonStatus status, Pageable pageable);
 
     LessonResponse getById(UUID id);
 

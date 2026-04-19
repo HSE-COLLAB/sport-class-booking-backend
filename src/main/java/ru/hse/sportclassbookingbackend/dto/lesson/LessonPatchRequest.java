@@ -4,7 +4,7 @@ import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record LessonPatchRequest(
@@ -13,12 +13,13 @@ public record LessonPatchRequest(
         @Pattern(regexp = "^(?!\\s*$).+", message = "place must not be blank")
         String place,
         @Future
-        OffsetDateTime startTime,
-        OffsetDateTime endTime,
+        LocalDateTime startTime,
+        @Future
+        LocalDateTime endTime,
         @Positive
         Integer totalPlaces,
         UUID workoutTypeId,
-        UUID teacherId,
+        Integer campusId,
         String notes
 ) {
 }

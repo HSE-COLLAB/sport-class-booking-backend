@@ -14,6 +14,7 @@ public record LessonResponse(
         Integer totalPlaces,
         String notes,
         WorkoutTypeResponse workoutType,
-        TeacherShortResponse teacher
+        TeacherShortResponse teacher,
+        CampusResponse campus
 ) {
 }

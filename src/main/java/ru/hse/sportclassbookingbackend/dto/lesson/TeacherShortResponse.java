@@ -6,6 +6,7 @@ public record TeacherShortResponse(
         UUID id,
         String firstName,
         String lastName,
+        String middleName,
         String position
 ) {
 }

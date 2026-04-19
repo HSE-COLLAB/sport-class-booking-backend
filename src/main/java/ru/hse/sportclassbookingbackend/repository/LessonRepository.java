@@ -15,23 +15,25 @@ public interface LessonRepository extends JpaRepository<Lesson, UUID> {
     @Query("""
             SELECT l FROM Lesson l
             JOIN FETCH l.workoutType wt
-            JOIN FETCH wt.allowHealthGroup
             JOIN FETCH l.teacher t
-            WHERE (:workoutTypeId IS NULL OR l.workoutType.id = :workoutTypeId)
-            AND (:teacherId IS NULL OR l.teacher.id = :teacherId)
-            AND (:from IS NULL OR l.startTime >= :from)
-            AND (:to IS NULL OR l.startTime <= :to)
-            AND (:place IS NULL OR LOWER(l.place) LIKE LOWER(CONCAT('%', :place, '%')))
+            JOIN FETCH l.campus c
+            WHERE (cast(:workoutTypeId as uuid) IS NULL OR l.workoutType.id = :workoutTypeId)
+            AND (cast(:teacherId as uuid) IS NULL OR l.teacher.id = :teacherId)
+            AND (cast(:campusId as integer) IS NULL OR l.campus.id = :campusId)
+            AND (cast(:from as timestamp) IS NULL OR l.startTime >= :from)
+            AND (cast(:to as timestamp) IS NULL OR l.startTime <= :to)
+            AND (cast(:place as string) IS NULL OR LOWER(l.place) LIKE LOWER(CONCAT('%', cast(:place as string), '%')))
             AND (
-                :status = 'UPCOMING' AND l.startTime > :now
-                OR :status = 'ONGOING' AND l.startTime <= :now AND l.endTime >= :now
-                OR :status = 'PAST' AND l.endTime < :now
-                OR :status IS NULL
+                cast(:status as string) = 'UPCOMING' AND l.startTime > :now
+                OR cast(:status as string) = 'ONGOING' AND l.startTime <= :now AND l.endTime >= :now
+                OR cast(:status as string) = 'PAST' AND l.endTime < :now
+                OR cast(:status as string) IS NULL AND l.endTime >= :now
             )
             """)
     Page<Lesson> findAllWithFilters(
             @Param("workoutTypeId") UUID workoutTypeId,
             @Param("teacherId") UUID teacherId,
+            @Param("campusId") Integer campusId,
             @Param("from") OffsetDateTime from,
             @Param("to") OffsetDateTime to,
             @Param("place") String place,

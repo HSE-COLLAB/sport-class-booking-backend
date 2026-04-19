@@ -40,6 +40,7 @@ public class LessonController {
     public ResponseEntity<Page<LessonResponse>> getAll(
             @RequestParam(required = false) UUID workoutTypeId,
             @RequestParam(required = false) UUID teacherId,
+            @RequestParam(required = false) Integer campusId,
             @RequestParam(required = false) OffsetDateTime from,
             @RequestParam(required = false) OffsetDateTime to,
             @RequestParam(required = false) String place,
@@ -48,7 +49,7 @@ public class LessonController {
             @RequestParam(defaultValue = "20") int size
     ) {
         return ResponseEntity.ok(
-                lessonService.getAll(workoutTypeId, teacherId, from, to, place, status, PageRequest.of(page, size))
+                lessonService.getAll(workoutTypeId, teacherId, campusId, from, to, place, status, PageRequest.of(page, size))
         );
     }
 
@@ -58,7 +59,7 @@ public class LessonController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<LessonResponse> create(
             @RequestBody @Valid LessonRequest request,
             @AuthenticationPrincipal UserPrincipal principal
@@ -67,7 +68,7 @@ public class LessonController {
     }
 
     @PostMapping("/recurring")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<RecurringLessonResponse> createRecurring(
             @RequestBody @Valid RecurringLessonRequest request,
             @AuthenticationPrincipal UserPrincipal principal
@@ -76,7 +77,7 @@ public class LessonController {
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<LessonResponse> update(
             @PathVariable UUID id,
             @RequestBody @Valid LessonPatchRequest request,
@@ -86,7 +87,7 @@ public class LessonController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<Void> delete(
             @PathVariable UUID id,
             @AuthenticationPrincipal UserPrincipal principal

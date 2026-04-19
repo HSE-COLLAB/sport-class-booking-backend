@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record LessonRequest(
@@ -14,14 +14,15 @@ public record LessonRequest(
         @NotBlank
         String place,
         @NotNull @Future
-        OffsetDateTime startTime,
-        @NotNull
-        OffsetDateTime endTime,
+        LocalDateTime startTime,
+        @NotNull @Future
+        LocalDateTime endTime,
         @NotNull @Positive
         Integer totalPlaces,
         @NotNull
         UUID workoutTypeId,
-        UUID teacherId,
+        @NotNull
+        Integer campusId,
         String notes
 ) {
 }
