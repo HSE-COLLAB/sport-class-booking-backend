@@ -1,27 +1,33 @@
-package ru.hse.sportclassbookingbackend.dto.user;
+package ru.hse.sportclassbookingbackend.dto.student;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
 
-public record UserPatchRequest(
+import java.util.UUID;
+
+public record StudentPatchRequest(
         @Email
         String email,
 
         @Pattern(regexp = "^(?!\\s*$).+", message = "password must not be blank")
         String password,
 
-        @Pattern(regexp = "^(?!\\s*$).+", message = "first must not be blank")
-        String first_name,
+        @Pattern(regexp = "^(?!\\s*$).+", message = "first name must not be blank")
+        String firstName,
 
         @Pattern(regexp = "^(?!\\s*$).+", message = "last name must not be blank")
-        String last_name,
+        String lastName,
 
         @Pattern(regexp = "^(?!\\s*$).+", message = "middle name must not be blank")
-        String middle_name,
+        String middleName,
 
         @Pattern(regexp = "^(?!\\s*$).+", message = "role must not be blank")
         String role,
 
-        Boolean is_active
+        Boolean isActive,
+
+        UUID groupId,
+
+        Integer healthGroupId
 ) {
 }

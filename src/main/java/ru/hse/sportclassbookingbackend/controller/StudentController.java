@@ -4,7 +4,6 @@ package ru.hse.sportclassbookingbackend.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -14,15 +13,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ru.hse.sportclassbookingbackend.dto.student.StudentHealthGroupPatchRequest;
 import ru.hse.sportclassbookingbackend.dto.student.StudentResponse;
-import ru.hse.sportclassbookingbackend.dto.user.UserPatchRequest;
+import ru.hse.sportclassbookingbackend.dto.student.StudentPatchRequest;
 import ru.hse.sportclassbookingbackend.dto.user.UserResponse;
-import ru.hse.sportclassbookingbackend.security.UserPrincipal;
 import ru.hse.sportclassbookingbackend.service.StudentService;
 
 import java.util.List;
 import java.util.UUID;
-
-import static org.springframework.data.jpa.domain.AbstractPersistable_.id;
 
 @RestController
 @RequestMapping("/students")
@@ -31,43 +27,33 @@ public class StudentController {
     private final StudentService studentService;
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("#id == principal.id")
-    public ResponseEntity<Void> delete(@PathVariable UUID id, @AuthenticationPrincipal UserPrincipal principal) {
+    @PreAuthorize("hasRole('ADMIN') or #id == authentication.principal.id")
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
         studentService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserResponse> update(@PathVariable UUID id, @RequestBody UserPatchRequest request,
-                                               @AuthenticationPrincipal UserPrincipal principal) {
+    public ResponseEntity<StudentResponse> update(@PathVariable UUID id, @RequestBody StudentPatchRequest request) {
         return ResponseEntity.ok(studentService.update(id, request));
     }
 
-    @PatchMapping("/health-group/{id}")
+    @PatchMapping("/{id}/health-group")
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
-    public ResponseEntity<StudentResponse> update(@PathVariable UUID id, @RequestBody StudentHealthGroupPatchRequest request,
-                                                  @AuthenticationPrincipal UserPrincipal principal) {
+    public ResponseEntity<StudentResponse> updateHealthGroup(@PathVariable UUID id, @RequestBody StudentHealthGroupPatchRequest request) {
         return ResponseEntity.ok(studentService.updateHealthGroup(id, request));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or #id == principal.id")
-    public ResponseEntity<UserResponse> getById(@PathVariable UUID id, @AuthenticationPrincipal UserPrincipal principal) {
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER') or #id == authentication.principal.id")
+    public ResponseEntity<StudentResponse> getById(@PathVariable UUID id) {
         return ResponseEntity.ok(studentService.getById(id));
     }
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
-    public ResponseEntity<List<UserResponse>> getAll(@AuthenticationPrincipal
-                                                     UserPrincipal principal) {
+    public ResponseEntity<List<StudentResponse>> getAll() {
         return ResponseEntity.ok(studentService.getAll());
-    }
-
-    @GetMapping("/group/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
-    public ResponseEntity<List<StudentResponse>> getAll(@PathVariable UUID id, @AuthenticationPrincipal
-                                                     UserPrincipal principal) {
-        return ResponseEntity.ok(studentService.getByGroupId(id));
     }
 }

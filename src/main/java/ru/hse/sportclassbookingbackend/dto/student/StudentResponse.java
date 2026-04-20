@@ -4,7 +4,7 @@ import java.util.UUID;
 
 public record StudentResponse(
         UUID id,
-        UUID group_id,
-        Integer health_group_id
+        UUID groupId,
+        Integer healthGroupId
 ) {
 }

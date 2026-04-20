@@ -6,9 +6,9 @@ import java.util.UUID;
 
 public record StudentRequest(
         @NotBlank
-        UUID group_id,
+        UUID groupId,
 
         @NotBlank
-        Integer health_group_id
+        Integer healthGroupId
 ) {
 }

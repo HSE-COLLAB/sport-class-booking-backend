@@ -11,5 +11,5 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface StudentRepository extends JpaRepository<Student, UUID> {
-    List<Student> findAllByIsActiveTrueAndGroupId(UUID id);
+    List<Student> findAllByIsActiveTrue();
 }
