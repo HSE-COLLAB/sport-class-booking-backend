@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import ru.hse.sportclassbookingbackend.dto.student.StudentHealthGroupPatchRequest;
 import ru.hse.sportclassbookingbackend.dto.student.StudentResponse;
 import ru.hse.sportclassbookingbackend.dto.student.StudentPatchRequest;
-import ru.hse.sportclassbookingbackend.dto.user.UserResponse;
+import ru.hse.sportclassbookingbackend.dto.student.StudentSelfUpdateRequest;
 import ru.hse.sportclassbookingbackend.service.StudentService;
 
 import java.util.List;
@@ -55,5 +55,11 @@ public class StudentController {
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<List<StudentResponse>> getAll() {
         return ResponseEntity.ok(studentService.getAll());
+    }
+
+    @PatchMapping("{id}/self-update")
+    @PreAuthorize("#id == authentication.principal.id")
+    public ResponseEntity<StudentResponse> selfUpdate(@PathVariable UUID id, @RequestBody StudentSelfUpdateRequest request) {
+        return ResponseEntity.ok(studentService.selfUpdate(id, request));
     }
 }

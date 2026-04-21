@@ -5,15 +5,12 @@ import org.springframework.stereotype.Service;
 import ru.hse.sportclassbookingbackend.dto.student.StudentHealthGroupPatchRequest;
 import ru.hse.sportclassbookingbackend.dto.student.StudentResponse;
 import ru.hse.sportclassbookingbackend.dto.student.StudentPatchRequest;
-import ru.hse.sportclassbookingbackend.dto.user.UserResponse;
+import ru.hse.sportclassbookingbackend.dto.student.StudentSelfUpdateRequest;
 import ru.hse.sportclassbookingbackend.exception.NotFoundException;
 import ru.hse.sportclassbookingbackend.mapper.StudentMapper;
-import ru.hse.sportclassbookingbackend.mapper.UserMapper;
 import ru.hse.sportclassbookingbackend.model.HealthGroup;
-import ru.hse.sportclassbookingbackend.model.Role;
 import ru.hse.sportclassbookingbackend.model.Student;
 import ru.hse.sportclassbookingbackend.model.StudentGroup;
-import ru.hse.sportclassbookingbackend.model.User;
 import ru.hse.sportclassbookingbackend.repository.HealthGroupRepository;
 import ru.hse.sportclassbookingbackend.repository.StudentGroupRepository;
 import ru.hse.sportclassbookingbackend.repository.StudentRepository;
@@ -29,7 +26,6 @@ public class StudentServiceImpl implements StudentService{
     private final StudentMapper studentMapper;
     private final UserRepository userRepository;
     private final StudentGroupRepository studentGroupRepository;
-    private final UserMapper userMapper;
     private final HealthGroupRepository healthGroupRepository;
 
     @Override
@@ -82,6 +78,14 @@ public class StudentServiceImpl implements StudentService{
         return studentRepository.findAllByIsActiveTrue().stream().map(studentMapper::toResponse).toList();
     }
 
+    public StudentResponse selfUpdate(UUID id, StudentSelfUpdateRequest request) {
+        Student student = studentRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Student with id: " + id + " was not found"));
 
+
+        studentMapper.toStudentFromSelfUpdate(request, student);
+
+        return studentMapper.toResponse(studentRepository.save(student));
+    }
 
 }

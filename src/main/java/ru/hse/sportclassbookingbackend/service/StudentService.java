@@ -3,7 +3,7 @@ package ru.hse.sportclassbookingbackend.service;
 import ru.hse.sportclassbookingbackend.dto.student.StudentHealthGroupPatchRequest;
 import ru.hse.sportclassbookingbackend.dto.student.StudentResponse;
 import ru.hse.sportclassbookingbackend.dto.student.StudentPatchRequest;
-import ru.hse.sportclassbookingbackend.dto.user.UserResponse;
+import ru.hse.sportclassbookingbackend.dto.student.StudentSelfUpdateRequest;
 
 import java.util.List;
 import java.util.UUID;
@@ -18,4 +18,6 @@ public interface StudentService {
     StudentResponse getById(UUID id);
 
     List<StudentResponse> getAll();
+
+    StudentResponse selfUpdate(UUID id, StudentSelfUpdateRequest request);
 }
