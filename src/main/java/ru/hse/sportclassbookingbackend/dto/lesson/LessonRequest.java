@@ -23,6 +23,7 @@ public record LessonRequest(
         UUID workoutTypeId,
         @NotNull
         Integer campusId,
+        UUID teacherId,
         String notes
 ) {
 }

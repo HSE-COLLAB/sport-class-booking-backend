@@ -9,5 +9,6 @@
     <include file="changes/v1.0.0-init/v1.0.0-init.xml" relativeToChangelogFile="true"/>
     <include file="changes/v1.0.1-insert-health-groups/v1.0.1-insert-health-groups.xml" relativeToChangelogFile="true"/>
     <include file="changes/v1.0.3-add-campuses/v1.0.3-add-campuses.xml" relativeToChangelogFile="true"/>
+    <include file="changes/v1.0.4-add-lesson-status/v1.0.4-add-lesson-status.xml" relativeToChangelogFile="true"/>
     <include file="changes/insert-test-data/insert-test-data.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>

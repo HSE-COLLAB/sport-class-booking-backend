@@ -20,6 +20,7 @@ public record LessonPatchRequest(
         Integer totalPlaces,
         UUID workoutTypeId,
         Integer campusId,
+        UUID teacherId,
         String notes
 ) {
 }
