@@ -20,9 +20,6 @@ public record TeacherPatchRequest(
         @Pattern(regexp = "^(?!\\s*$).+", message = "middle name must not be blank")
         String middleName,
 
-        @Pattern(regexp = "^(?!\\s*$).+", message = "role must not be blank")
-        String role,
-
         Boolean isActive,
 
         @Pattern(regexp = "^(?!\\s*$).+", message = "position must not be blank")

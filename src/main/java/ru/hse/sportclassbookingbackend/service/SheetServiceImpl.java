@@ -49,7 +49,8 @@ public class SheetServiceImpl implements SheetService {
     @Override
     @Transactional
     public SheetIdResponse register(UUID lessonId, UserPrincipal principal) {
-        Lesson lesson = findLessonOrThrow(lessonId);
+        Lesson lesson = lessonRepository.findByIdForUpdate(lessonId)
+                .orElseThrow(() -> new NotFoundException("Lesson with id: " + lessonId + " was not found"));
         Student student = findStudentOrThrow(principal.getId());
 
         if (lesson.getStatus() == LessonStatus.CANCELLED) {
@@ -90,6 +91,9 @@ public class SheetServiceImpl implements SheetService {
 
         if (!sheet.getLesson().getId().equals(lessonId)) {
             throw new BadRequestException("Sheet does not belong to the specified lesson");
+        }
+        if (sheet.getLesson().getStatus() == LessonStatus.CANCELLED) {
+            throw new ConflictException("Cannot cancel registration on a cancelled lesson");
         }
         if (!sheet.getLesson().getStartTime().isAfter(OffsetDateTime.now())) {
             throw new BadRequestException("Cannot cancel registration after the lesson has started");

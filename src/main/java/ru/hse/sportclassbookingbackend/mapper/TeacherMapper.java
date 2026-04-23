@@ -18,10 +18,10 @@ public interface TeacherMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "role", ignore = true)
     @Mapping(target = "campus", ignore = true)
+    @Mapping(target = "isActive", constant = "true")
     Teacher toEntity(RegisterTeacherRequest req);
 
     @Mapping(target = "email", source = "email")
-    @Mapping(target = "password", source = "password")
     @Mapping(target = "firstName", source = "firstName")
     @Mapping(target = "lastName", source = "lastName")
     @Mapping(target = "middleName", source = "middleName")
@@ -35,8 +35,8 @@ public interface TeacherMapper {
     @Mapping(target = "firstName", source = "firstName")
     @Mapping(target = "lastName", source = "lastName")
     @Mapping(target = "middleName", source = "middleName")
-    @Mapping(target = "role", source = "role")
     @Mapping(target = "isActive", source = "isActive")
+    @Mapping(target = "role", ignore = true)
     @Mapping(target = "position", ignore = true)
     void toTeacherFromDto(TeacherPatchRequest request, @MappingTarget Teacher teacher);
 }

@@ -21,9 +21,6 @@ public record StudentPatchRequest(
         @Pattern(regexp = "^(?!\\s*$).+", message = "middle name must not be blank")
         String middleName,
 
-        @Pattern(regexp = "^(?!\\s*$).+", message = "role must not be blank")
-        String role,
-
         Boolean isActive,
 
         UUID groupId,

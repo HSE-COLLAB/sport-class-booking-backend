@@ -1,13 +1,10 @@
 package ru.hse.sportclassbookingbackend.dto.student;
 
-import jakarta.validation.constraints.NotBlank;
-import ru.hse.sportclassbookingbackend.model.HealthGroup;
-
-import java.util.UUID;
+import jakarta.validation.constraints.NotNull;
 
 public record StudentHealthGroupPatchRequest(
 
-        @NotBlank
+        @NotNull
         Integer healthGroupId
 ) {
 }

@@ -204,9 +204,19 @@ public class LessonServiceImpl implements LessonService {
         }
         if (request.startTime() != null || request.endTime() != null) {
             validateTimeRange(lesson.getStartTime(), lesson.getEndTime());
+        }
+        if (request.startTime() != null || request.endTime() != null || request.teacherId() != null) {
             if (lessonRepository.hasTeacherTimeOverlap(lesson.getTeacher().getId(),
                     lesson.getStartTime(), lesson.getEndTime(), lesson.getId())) {
                 throw new ConflictException("Teacher already has a lesson at this time");
+            }
+        }
+        if (request.totalPlaces() != null) {
+            long taken = sheetRepository.countByLessonId(lesson.getId());
+            if (taken > request.totalPlaces()) {
+                throw new ConflictException(
+                        "Cannot set totalPlaces to " + request.totalPlaces()
+                                + ": " + taken + " students are already registered");
             }
         }
 

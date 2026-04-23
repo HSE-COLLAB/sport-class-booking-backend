@@ -1,5 +1,6 @@
 package ru.hse.sportclassbookingbackend.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -32,7 +33,7 @@ public class TeacherController {
 
     @PatchMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or #id == authentication.principal.id")
-    public ResponseEntity<TeacherResponse> update(@PathVariable UUID id, @RequestBody TeacherPatchRequest request) {
+    public ResponseEntity<TeacherResponse> update(@PathVariable UUID id, @RequestBody @Valid TeacherPatchRequest request) {
         return ResponseEntity.ok(teacherService.update(id, request));
     }
 
