@@ -5,13 +5,13 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import ru.hse.sportclassbookingbackend.model.Role;
+import ru.hse.sportclassbookingbackend.model.User;
+import ru.hse.sportclassbookingbackend.repository.UserRepository;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -21,19 +21,26 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class DevAuthFilter extends OncePerRequestFilter {
 
-    @Value("${security.development.default-user.role:STUDENT}")
-    private Role role;
+    private static final String HEADER_NAME = "X-Dev-User-Id";
+
+    private final UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        UserPrincipal principal = switch (role) {
-            case Role.STUDENT -> new UserPrincipal(UUID.fromString("55555555-5555-5555-5555-555555555555"), role);
-            case Role.TEACHER -> new UserPrincipal(UUID.fromString("33333333-3333-3333-3333-333333333333"), role);
-            case Role.ADMIN -> new UserPrincipal(UUID.fromString("11111111-1111-1111-1111-111111111111"), role);
-        };
-        UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+        String headerValue = request.getHeader(HEADER_NAME);
+        if (headerValue != null && !headerValue.isBlank()) {
+            try {
+                UUID userId = UUID.fromString(headerValue.trim());
+                userRepository.findById(userId).ifPresent(user -> {
+                    UserPrincipal principal = new UserPrincipal(user.getId(), user.getRole());
+                    SecurityContextHolder.getContext().setAuthentication(
+                            new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities())
+                    );
+                });
+            } catch (IllegalArgumentException ignored) {
+                // invalid UUID — request proceeds without authentication
+            }
+        }
         filterChain.doFilter(request, response);
     }
 }

@@ -8,7 +8,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,13 +19,16 @@ import org.springframework.web.bind.annotation.RestController;
 import ru.hse.sportclassbookingbackend.dto.lesson.LessonPatchRequest;
 import ru.hse.sportclassbookingbackend.dto.lesson.LessonRequest;
 import ru.hse.sportclassbookingbackend.dto.lesson.LessonResponse;
-import ru.hse.sportclassbookingbackend.dto.lesson.LessonStatus;
+import ru.hse.sportclassbookingbackend.dto.lesson.LessonTimeStatus;
 import ru.hse.sportclassbookingbackend.dto.lesson.RecurringLessonRequest;
 import ru.hse.sportclassbookingbackend.dto.lesson.RecurringLessonResponse;
+import ru.hse.sportclassbookingbackend.dto.sheet.MyLessonResponse;
 import ru.hse.sportclassbookingbackend.security.UserPrincipal;
 import ru.hse.sportclassbookingbackend.service.LessonService;
+import ru.hse.sportclassbookingbackend.service.SheetService;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -35,21 +37,42 @@ import java.util.UUID;
 public class LessonController {
 
     private final LessonService lessonService;
+    private final SheetService sheetService;
 
     @GetMapping
     public ResponseEntity<Page<LessonResponse>> getAll(
-            @RequestParam(required = false) UUID workoutTypeId,
+            @RequestParam Integer campusId,
+            @RequestParam(required = false) List<UUID> workoutTypeId,
             @RequestParam(required = false) UUID teacherId,
-            @RequestParam(required = false) Integer campusId,
-            @RequestParam(required = false) OffsetDateTime from,
-            @RequestParam(required = false) OffsetDateTime to,
+            @RequestParam(required = false) LocalDateTime from,
+            @RequestParam(required = false) LocalDateTime to,
             @RequestParam(required = false) String place,
-            @RequestParam(required = false) LessonStatus status,
+            @RequestParam(required = false) Boolean myHealthGroup,
+            @RequestParam(required = false) List<LessonTimeStatus> status,
+            @RequestParam(required = false) Boolean includeCancelled,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            @AuthenticationPrincipal UserPrincipal principal
     ) {
         return ResponseEntity.ok(
-                lessonService.getAll(workoutTypeId, teacherId, campusId, from, to, place, status, PageRequest.of(page, size))
+                lessonService.getAll(campusId, workoutTypeId, teacherId, from, to, place, myHealthGroup, status,
+                        includeCancelled, PageRequest.of(page, size), principal)
+        );
+    }
+
+    @GetMapping("/my")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<Page<MyLessonResponse>> getMy(
+            @RequestParam(required = false) LessonTimeStatus status,
+            @RequestParam(required = false) Boolean visited,
+            @RequestParam(required = false) LocalDateTime from,
+            @RequestParam(required = false) LocalDateTime to,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        return ResponseEntity.ok(
+                sheetService.getMyLessons(status, visited, from, to, PageRequest.of(page, size), principal)
         );
     }
 
@@ -59,7 +82,7 @@ public class LessonController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<LessonResponse> create(
             @RequestBody @Valid LessonRequest request,
             @AuthenticationPrincipal UserPrincipal principal
@@ -68,7 +91,7 @@ public class LessonController {
     }
 
     @PostMapping("/recurring")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<RecurringLessonResponse> createRecurring(
             @RequestBody @Valid RecurringLessonRequest request,
             @AuthenticationPrincipal UserPrincipal principal
@@ -77,7 +100,7 @@ public class LessonController {
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<LessonResponse> update(
             @PathVariable UUID id,
             @RequestBody @Valid LessonPatchRequest request,
@@ -86,13 +109,12 @@ public class LessonController {
         return ResponseEntity.ok(lessonService.update(id, request, principal));
     }
 
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<Void> delete(
+    @PostMapping("/{id}/cancel")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    public ResponseEntity<LessonResponse> cancel(
             @PathVariable UUID id,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        lessonService.delete(id, principal);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(lessonService.cancel(id, principal));
     }
 }

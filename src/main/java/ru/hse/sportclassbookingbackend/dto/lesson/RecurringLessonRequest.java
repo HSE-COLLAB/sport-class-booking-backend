@@ -33,6 +33,7 @@ public record RecurringLessonRequest(
         @NotNull @Future
         LocalDate endDate,
         @NotNull
-        Integer campusId
+        Integer campusId,
+        UUID teacherId
 ) {
 }

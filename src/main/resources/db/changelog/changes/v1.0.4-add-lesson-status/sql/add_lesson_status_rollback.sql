@@ -1,0 +1,2 @@
+ALTER TABLE lessons DROP CONSTRAINT IF EXISTS chk_lessons_status;
+ALTER TABLE lessons DROP COLUMN IF EXISTS status;

@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import ru.hse.sportclassbookingbackend.model.Lesson;
 
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.UUID;
 
 public interface LessonRepository extends JpaRepository<Lesson, UUID> {
@@ -17,28 +18,51 @@ public interface LessonRepository extends JpaRepository<Lesson, UUID> {
             JOIN FETCH l.workoutType wt
             JOIN FETCH l.teacher t
             JOIN FETCH l.campus c
-            WHERE (cast(:workoutTypeId as uuid) IS NULL OR l.workoutType.id = :workoutTypeId)
+            WHERE l.campus.id = :campusId
+            AND (:workoutTypeIds IS NULL OR l.workoutType.id IN :workoutTypeIds)
             AND (cast(:teacherId as uuid) IS NULL OR l.teacher.id = :teacherId)
-            AND (cast(:campusId as integer) IS NULL OR l.campus.id = :campusId)
-            AND (cast(:from as timestamp) IS NULL OR l.startTime >= :from)
+            AND (cast(:from as timestamp) IS NULL OR l.endTime >= :from)
             AND (cast(:to as timestamp) IS NULL OR l.startTime <= :to)
             AND (cast(:place as string) IS NULL OR LOWER(l.place) LIKE LOWER(CONCAT('%', cast(:place as string), '%')))
+            AND (cast(:healthGroupId as integer) IS NULL OR EXISTS (
+                SELECT 1 FROM HealthGroup hg
+                WHERE hg MEMBER OF wt.allowedHealthGroups AND hg.id = :healthGroupId
+            ))
+            AND (:includeCancelled = TRUE OR l.status = 'ACTIVE')
             AND (
-                cast(:status as string) = 'UPCOMING' AND l.startTime > :now
-                OR cast(:status as string) = 'ONGOING' AND l.startTime <= :now AND l.endTime >= :now
-                OR cast(:status as string) = 'PAST' AND l.endTime < :now
-                OR cast(:status as string) IS NULL AND l.endTime >= :now
+                :timeStatuses IS NULL
+                OR ('UPCOMING' IN :timeStatuses AND l.startTime > :now)
+                OR ('ONGOING' IN :timeStatuses AND l.startTime <= :now AND l.endTime >= :now)
+                OR ('PAST' IN :timeStatuses AND l.endTime < :now)
             )
             """)
     Page<Lesson> findAllWithFilters(
-            @Param("workoutTypeId") UUID workoutTypeId,
-            @Param("teacherId") UUID teacherId,
             @Param("campusId") Integer campusId,
+            @Param("workoutTypeIds") Collection<UUID> workoutTypeIds,
+            @Param("teacherId") UUID teacherId,
             @Param("from") OffsetDateTime from,
             @Param("to") OffsetDateTime to,
             @Param("place") String place,
-            @Param("status") String status,
+            @Param("healthGroupId") Integer healthGroupId,
+            @Param("timeStatuses") Collection<String> timeStatuses,
+            @Param("includeCancelled") boolean includeCancelled,
             @Param("now") OffsetDateTime now,
             Pageable pageable
+    );
+
+    @Query("""
+            SELECT CASE WHEN COUNT(l) > 0 THEN TRUE ELSE FALSE END
+            FROM Lesson l
+            WHERE l.teacher.id = :teacherId
+              AND l.status = 'ACTIVE'
+              AND (cast(:excludeLessonId as uuid) IS NULL OR l.id <> :excludeLessonId)
+              AND l.startTime < :endTime
+              AND l.endTime > :startTime
+            """)
+    boolean hasTeacherTimeOverlap(
+            @Param("teacherId") UUID teacherId,
+            @Param("startTime") OffsetDateTime startTime,
+            @Param("endTime") OffsetDateTime endTime,
+            @Param("excludeLessonId") UUID excludeLessonId
     );
 }

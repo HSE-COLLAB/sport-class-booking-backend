@@ -12,21 +12,22 @@ import ru.hse.sportclassbookingbackend.dto.lesson.LessonRequest;
 import ru.hse.sportclassbookingbackend.dto.lesson.LessonResponse;
 import ru.hse.sportclassbookingbackend.dto.lesson.RecurringLessonRequest;
 import ru.hse.sportclassbookingbackend.dto.lesson.TeacherShortResponse;
+import ru.hse.sportclassbookingbackend.dto.workouttype.WorkoutTypeResponse;
 import ru.hse.sportclassbookingbackend.model.Campus;
 import ru.hse.sportclassbookingbackend.model.Lesson;
 import ru.hse.sportclassbookingbackend.model.Teacher;
+import ru.hse.sportclassbookingbackend.model.WorkoutType;
 
 import java.time.OffsetDateTime;
 
-@Mapper(componentModel = "spring", uses = {WorkoutTypeMapper.class})
+@Mapper(componentModel = "spring")
 public interface LessonMapper {
-
-    LessonResponse toResponse(Lesson lesson);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "workoutType", ignore = true)
     @Mapping(target = "teacher", ignore = true)
     @Mapping(target = "campus", ignore = true)
+    @Mapping(target = "status", ignore = true)
     @Mapping(target = "sheets", ignore = true)
     @Mapping(target = "startTime", ignore = true)
     @Mapping(target = "endTime", ignore = true)
@@ -36,6 +37,7 @@ public interface LessonMapper {
     @Mapping(target = "workoutType", ignore = true)
     @Mapping(target = "teacher", ignore = true)
     @Mapping(target = "campus", ignore = true)
+    @Mapping(target = "status", ignore = true)
     @Mapping(target = "sheets", ignore = true)
     @Mapping(target = "startTime", source = "startTime")
     @Mapping(target = "endTime", source = "endTime")
@@ -47,6 +49,7 @@ public interface LessonMapper {
     @Mapping(target = "workoutType", ignore = true)
     @Mapping(target = "teacher", ignore = true)
     @Mapping(target = "campus", ignore = true)
+    @Mapping(target = "status", ignore = true)
     @Mapping(target = "sheets", ignore = true)
     @Mapping(target = "startTime", ignore = true)
     @Mapping(target = "endTime", ignore = true)
@@ -55,4 +58,6 @@ public interface LessonMapper {
     TeacherShortResponse toTeacherShortResponse(Teacher teacher);
 
     CampusResponse toCampusResponse(Campus campus);
+
+    WorkoutTypeResponse toWorkoutTypeResponse(WorkoutType workoutType);
 }

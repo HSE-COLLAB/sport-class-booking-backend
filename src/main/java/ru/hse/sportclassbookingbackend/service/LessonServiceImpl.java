@@ -11,17 +11,23 @@ import ru.hse.sportclassbookingbackend.dto.lesson.LessonPatchRequest;
 import ru.hse.sportclassbookingbackend.dto.lesson.LessonRequest;
 import ru.hse.sportclassbookingbackend.dto.lesson.LessonResponse;
 import ru.hse.sportclassbookingbackend.dto.lesson.LessonStatus;
+import ru.hse.sportclassbookingbackend.dto.lesson.LessonTimeStatus;
 import ru.hse.sportclassbookingbackend.dto.lesson.RecurringLessonRequest;
 import ru.hse.sportclassbookingbackend.dto.lesson.RecurringLessonResponse;
 import ru.hse.sportclassbookingbackend.exception.BadRequestException;
+import ru.hse.sportclassbookingbackend.exception.ConflictException;
 import ru.hse.sportclassbookingbackend.exception.NotFoundException;
 import ru.hse.sportclassbookingbackend.mapper.LessonMapper;
 import ru.hse.sportclassbookingbackend.model.Campus;
 import ru.hse.sportclassbookingbackend.model.Lesson;
+import ru.hse.sportclassbookingbackend.model.Role;
+import ru.hse.sportclassbookingbackend.model.Student;
 import ru.hse.sportclassbookingbackend.model.Teacher;
 import ru.hse.sportclassbookingbackend.model.WorkoutType;
 import ru.hse.sportclassbookingbackend.repository.CampusRepository;
 import ru.hse.sportclassbookingbackend.repository.LessonRepository;
+import ru.hse.sportclassbookingbackend.repository.SheetRepository;
+import ru.hse.sportclassbookingbackend.repository.StudentRepository;
 import ru.hse.sportclassbookingbackend.repository.TeacherRepository;
 import ru.hse.sportclassbookingbackend.repository.WorkoutTypeRepository;
 import ru.hse.sportclassbookingbackend.security.UserPrincipal;
@@ -32,6 +38,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -45,25 +52,57 @@ public class LessonServiceImpl implements LessonService {
     private final WorkoutTypeRepository workoutTypeRepository;
     private final TeacherRepository teacherRepository;
     private final CampusRepository campusRepository;
+    private final StudentRepository studentRepository;
+    private final SheetRepository sheetRepository;
     private final LessonMapper lessonMapper;
 
     @Override
     @Transactional(readOnly = true)
-    public Page<LessonResponse> getAll(UUID workoutTypeId, UUID teacherId, Integer campusId, OffsetDateTime from,
-                                       OffsetDateTime to, String place, LessonStatus status, Pageable pageable) {
-        Sort sort = resolveSort(status);
+    public Page<LessonResponse> getAll(Integer campusId, Collection<UUID> workoutTypeIds, UUID teacherId,
+                                       LocalDateTime from, LocalDateTime to, String place,
+                                       Boolean myHealthGroup, Collection<LessonTimeStatus> timeStatuses,
+                                       Boolean includeCancelled, Pageable pageable, UserPrincipal principal) {
+        Campus campus = findCampusOrThrow(campusId);
+
+        if (from != null && to != null && !to.isAfter(from)) {
+            throw new BadRequestException("'to' must be after 'from'");
+        }
+
+        Collection<LessonTimeStatus> effectiveStatuses = timeStatuses;
+        if (effectiveStatuses == null || effectiveStatuses.isEmpty()) {
+            effectiveStatuses = List.of(LessonTimeStatus.UPCOMING, LessonTimeStatus.ONGOING);
+        }
+        Collection<String> statusStrings = effectiveStatuses.stream().map(Enum::name).toList();
+
+        Collection<UUID> effectiveWorkoutTypeIds = (workoutTypeIds == null || workoutTypeIds.isEmpty())
+                ? null
+                : workoutTypeIds;
+
+        Sort sort = resolveSort(effectiveStatuses);
         Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
-        String statusStr = status != null ? status.name() : null;
+
+        OffsetDateTime fromUtc = from != null ? toCampusOffsetDateTime(from, campus) : null;
+        OffsetDateTime toUtc = to != null ? toCampusOffsetDateTime(to, campus) : null;
+
+        Integer healthGroupId = null;
+        if (Boolean.TRUE.equals(myHealthGroup)) {
+            if (principal.getRole() != Role.STUDENT) {
+                throw new BadRequestException("myHealthGroup filter is only available for students");
+            }
+            Student student = findStudentOrThrow(principal.getId());
+            healthGroupId = student.getHealthGroup().getId();
+        }
 
         return lessonRepository.findAllWithFilters(
-                workoutTypeId, teacherId, campusId, from, to, place, statusStr, OffsetDateTime.now(), sortedPageable
-        ).map(lessonMapper::toResponse);
+                campusId, effectiveWorkoutTypeIds, teacherId, fromUtc, toUtc, place, healthGroupId,
+                statusStrings, Boolean.TRUE.equals(includeCancelled), OffsetDateTime.now(), sortedPageable
+        ).map(this::toResponse);
     }
 
     @Override
     @Transactional(readOnly = true)
     public LessonResponse getById(UUID id) {
-        return lessonMapper.toResponse(findLessonOrThrow(id));
+        return toResponse(findLessonOrThrow(id));
     }
 
     @Override
@@ -71,18 +110,26 @@ public class LessonServiceImpl implements LessonService {
     public LessonResponse create(LessonRequest request, UserPrincipal principal) {
         validateTimeRange(request.startTime(), request.endTime());
 
-        Teacher teacher = findTeacherOrThrow(principal.getId());
-        WorkoutType workoutType = findActiveWorkoutTypeOrThrow(request.workoutTypeId());
         Campus campus = findCampusOrThrow(request.campusId());
+        WorkoutType workoutType = findActiveWorkoutTypeOrThrow(request.workoutTypeId());
+        Teacher teacher = resolveTeacher(request.teacherId(), campus, principal);
+
+        OffsetDateTime startTime = toCampusOffsetDateTime(request.startTime(), campus);
+        OffsetDateTime endTime = toCampusOffsetDateTime(request.endTime(), campus);
+
+        if (lessonRepository.hasTeacherTimeOverlap(teacher.getId(), startTime, endTime, null)) {
+            throw new ConflictException("Teacher already has a lesson at this time");
+        }
 
         Lesson lesson = lessonMapper.toEntity(request);
-        lesson.setStartTime(toCampusOffsetDateTime(request.startTime(), campus));
-        lesson.setEndTime(toCampusOffsetDateTime(request.endTime(), campus));
+        lesson.setStartTime(startTime);
+        lesson.setEndTime(endTime);
         lesson.setTeacher(teacher);
         lesson.setCampus(campus);
         lesson.setWorkoutType(workoutType);
+        lesson.setStatus(LessonStatus.ACTIVE);
 
-        return lessonMapper.toResponse(lessonRepository.save(lesson));
+        return toResponse(lessonRepository.save(lesson));
     }
 
     @Override
@@ -90,14 +137,20 @@ public class LessonServiceImpl implements LessonService {
     public RecurringLessonResponse createRecurring(RecurringLessonRequest request, UserPrincipal principal) {
         validateRecurringRequest(request);
 
-        Teacher teacher = findTeacherOrThrow(principal.getId());
-        WorkoutType workoutType = findActiveWorkoutTypeOrThrow(request.workoutTypeId());
         Campus campus = findCampusOrThrow(request.campusId());
+        WorkoutType workoutType = findActiveWorkoutTypeOrThrow(request.workoutTypeId());
+        Teacher teacher = resolveTeacher(request.teacherId(), campus, principal);
 
         List<Lesson> lessons = generateLessons(request, teacher, workoutType, campus);
 
         if (lessons.isEmpty()) {
             throw new BadRequestException("No lessons could be created for the given schedule");
+        }
+
+        for (Lesson lesson : lessons) {
+            if (lessonRepository.hasTeacherTimeOverlap(teacher.getId(), lesson.getStartTime(), lesson.getEndTime(), null)) {
+                throw new ConflictException("Teacher already has a lesson at " + lesson.getStartTime());
+            }
         }
 
         lessonRepository.saveAll(lessons);
@@ -112,7 +165,11 @@ public class LessonServiceImpl implements LessonService {
     @Transactional
     public LessonResponse update(UUID id, LessonPatchRequest request, UserPrincipal principal) {
         Lesson lesson = findLessonOrThrow(id);
-        checkOwnership(lesson, principal);
+        checkEditPermission(lesson, principal);
+
+        if (lesson.getStatus() == LessonStatus.CANCELLED) {
+            throw new ConflictException("Cannot edit cancelled lesson");
+        }
 
         lessonMapper.updateFromPatch(request, lesson);
 
@@ -120,7 +177,24 @@ public class LessonServiceImpl implements LessonService {
             lesson.setWorkoutType(findActiveWorkoutTypeOrThrow(request.workoutTypeId()));
         }
         if (request.campusId() != null) {
-            lesson.setCampus(findCampusOrThrow(request.campusId()));
+            Campus newCampus = findCampusOrThrow(request.campusId());
+            if (principal.getRole() == Role.TEACHER) {
+                Teacher teacher = findTeacherOrThrow(principal.getId());
+                if (!newCampus.getId().equals(teacher.getCampus().getId())) {
+                    throw new BadRequestException("You can only work with lessons in your own campus");
+                }
+            }
+            lesson.setCampus(newCampus);
+        }
+        if (request.teacherId() != null) {
+            if (principal.getRole() == Role.TEACHER) {
+                throw new BadRequestException("Teacher cannot reassign lesson to another teacher");
+            }
+            Teacher newTeacher = findTeacherOrThrow(request.teacherId());
+            if (!newTeacher.getCampus().getId().equals(lesson.getCampus().getId())) {
+                throw new BadRequestException("Teacher must belong to the same campus as lesson");
+            }
+            lesson.setTeacher(newTeacher);
         }
         if (request.startTime() != null) {
             lesson.setStartTime(toCampusOffsetDateTime(request.startTime(), lesson.getCampus()));
@@ -130,18 +204,64 @@ public class LessonServiceImpl implements LessonService {
         }
         if (request.startTime() != null || request.endTime() != null) {
             validateTimeRange(lesson.getStartTime(), lesson.getEndTime());
+            if (lessonRepository.hasTeacherTimeOverlap(lesson.getTeacher().getId(),
+                    lesson.getStartTime(), lesson.getEndTime(), lesson.getId())) {
+                throw new ConflictException("Teacher already has a lesson at this time");
+            }
         }
 
-        return lessonMapper.toResponse(lessonRepository.save(lesson));
+        return toResponse(lessonRepository.save(lesson));
     }
 
     @Override
     @Transactional
-    public void delete(UUID id, UserPrincipal principal) {
-        lessonRepository.findById(id).ifPresent(lesson -> {
-            checkOwnership(lesson, principal);
-            lessonRepository.delete(lesson);
-        });
+    public LessonResponse cancel(UUID id, UserPrincipal principal) {
+        Lesson lesson = findLessonOrThrow(id);
+        checkEditPermission(lesson, principal);
+
+        if (lesson.getStatus() == LessonStatus.CANCELLED) {
+            throw new ConflictException("Lesson is already cancelled");
+        }
+        if (!lesson.getEndTime().isAfter(OffsetDateTime.now())) {
+            throw new BadRequestException("Cannot cancel a lesson that has already ended");
+        }
+
+        lesson.setStatus(LessonStatus.CANCELLED);
+        return toResponse(lessonRepository.save(lesson));
+    }
+
+    private Teacher resolveTeacher(UUID teacherIdFromRequest, Campus campus, UserPrincipal principal) {
+        if (principal.getRole() == Role.TEACHER) {
+            if (teacherIdFromRequest != null && !teacherIdFromRequest.equals(principal.getId())) {
+                throw new BadRequestException("Teacher cannot assign lesson to another teacher");
+            }
+            Teacher teacher = findTeacherOrThrow(principal.getId());
+            if (!teacher.getCampus().getId().equals(campus.getId())) {
+                throw new BadRequestException("You can only create lessons in your own campus");
+            }
+            return teacher;
+        }
+        if (teacherIdFromRequest == null) {
+            throw new BadRequestException("teacherId is required for admin");
+        }
+        Teacher teacher = findTeacherOrThrow(teacherIdFromRequest);
+        if (!teacher.getCampus().getId().equals(campus.getId())) {
+            throw new BadRequestException("Teacher must belong to the same campus as lesson");
+        }
+        return teacher;
+    }
+
+    private void checkEditPermission(Lesson lesson, UserPrincipal principal) {
+        if (principal.getRole() == Role.ADMIN) {
+            return;
+        }
+        if (principal.getRole() == Role.TEACHER) {
+            if (!lesson.getTeacher().getId().equals(principal.getId())) {
+                throw new BadRequestException("You can only modify your own lessons");
+            }
+            return;
+        }
+        throw new BadRequestException("Access denied");
     }
 
     private void validateRecurringRequest(RecurringLessonRequest request) {
@@ -173,6 +293,7 @@ public class LessonServiceImpl implements LessonService {
                     lesson.setTeacher(teacher);
                     lesson.setCampus(campus);
                     lesson.setWorkoutType(workoutType);
+                    lesson.setStatus(LessonStatus.ACTIVE);
                     lessons.add(lesson);
                 }
             }
@@ -188,12 +309,6 @@ public class LessonServiceImpl implements LessonService {
         return localDateTime.atOffset(offset);
     }
 
-    private void checkOwnership(Lesson lesson, UserPrincipal principal) {
-        if (!lesson.getTeacher().getId().equals(principal.getId())) {
-            throw new BadRequestException("You can only modify your own lessons");
-        }
-    }
-
     private void validateTimeRange(LocalDateTime startTime, LocalDateTime endTime) {
         if (!endTime.isAfter(startTime)) {
             throw new BadRequestException("endTime must be after startTime");
@@ -204,6 +319,26 @@ public class LessonServiceImpl implements LessonService {
         if (!endTime.isAfter(startTime)) {
             throw new BadRequestException("endTime must be after startTime");
         }
+    }
+
+    LessonResponse toResponse(Lesson lesson) {
+        int taken = (int) sheetRepository.countByLessonId(lesson.getId());
+        int available = Math.max(0, lesson.getTotalPlaces() - taken);
+        ZoneId zoneId = ZoneId.of(lesson.getCampus().getTimezone());
+        return new LessonResponse(
+                lesson.getId(),
+                lesson.getTitle(),
+                lesson.getPlace(),
+                lesson.getStartTime().atZoneSameInstant(zoneId).toOffsetDateTime(),
+                lesson.getEndTime().atZoneSameInstant(zoneId).toOffsetDateTime(),
+                lesson.getTotalPlaces(),
+                available,
+                lesson.getStatus(),
+                lesson.getNotes(),
+                lessonMapper.toWorkoutTypeResponse(lesson.getWorkoutType()),
+                lessonMapper.toTeacherShortResponse(lesson.getTeacher()),
+                lessonMapper.toCampusResponse(lesson.getCampus())
+        );
     }
 
     private Lesson findLessonOrThrow(UUID id) {
@@ -221,13 +356,19 @@ public class LessonServiceImpl implements LessonService {
                 .orElseThrow(() -> new BadRequestException("Teacher with id: " + id + " was not found"));
     }
 
+    private Student findStudentOrThrow(UUID id) {
+        return studentRepository.findById(id)
+                .orElseThrow(() -> new BadRequestException("Student with id: " + id + " was not found"));
+    }
+
     private Campus findCampusOrThrow(Integer id) {
         return campusRepository.findById(id)
                 .orElseThrow(() -> new BadRequestException("Campus with id: " + id + " was not found"));
     }
 
-    private Sort resolveSort(LessonStatus status) {
-        if (status == LessonStatus.PAST) {
+    private Sort resolveSort(Collection<LessonTimeStatus> statuses) {
+        boolean onlyPast = statuses != null && statuses.size() == 1 && statuses.iterator().next() == LessonTimeStatus.PAST;
+        if (onlyPast) {
             return Sort.by(Sort.Direction.DESC, "startTime");
         }
         return Sort.by(Sort.Direction.ASC, "startTime");
