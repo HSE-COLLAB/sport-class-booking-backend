@@ -11,4 +11,5 @@
     <include file="changes/v1.0.3-add-campuses/v1.0.3-add-campuses.xml" relativeToChangelogFile="true"/>
     <include file="changes/v1.0.4-add-lesson-status/v1.0.4-add-lesson-status.xml" relativeToChangelogFile="true"/>
     <include file="changes/insert-test-data/insert-test-data.xml" relativeToChangelogFile="true"/>
+    <include file="changes/v1.0.2-is-active-column-for-users/v1.0.2-is-active-column-for-users.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>

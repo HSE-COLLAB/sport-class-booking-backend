@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="v.1.0.2-is-active-column" author="dev">
+        <sqlFile path="sql/insert-is-active-column.sql"
+                 relativeToChangelogFile="true"
+                 encoding="UTF-8"/>
+        <rollback>
+            <sqlFile path="sql/insert-is-active-column-rollback.sql"
+                     relativeToChangelogFile="true"
+                     encoding="UTF-8"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>
