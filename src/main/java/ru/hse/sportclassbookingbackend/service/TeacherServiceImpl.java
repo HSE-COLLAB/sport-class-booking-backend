@@ -1,13 +1,16 @@
 package ru.hse.sportclassbookingbackend.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import ru.hse.sportclassbookingbackend.dto.teacher.TeacherPatchRequest;
 import ru.hse.sportclassbookingbackend.dto.teacher.TeacherResponse;
+import ru.hse.sportclassbookingbackend.exception.ConflictException;
 import ru.hse.sportclassbookingbackend.exception.NotFoundException;
 import ru.hse.sportclassbookingbackend.mapper.TeacherMapper;
 import ru.hse.sportclassbookingbackend.model.Teacher;
 import ru.hse.sportclassbookingbackend.repository.TeacherRepository;
+import ru.hse.sportclassbookingbackend.repository.UserRepository;
 
 import java.util.List;
 import java.util.UUID;
@@ -17,6 +20,8 @@ import java.util.UUID;
 public class TeacherServiceImpl implements TeacherService{
     private final TeacherRepository teacherRepository;
     private final TeacherMapper teacherMapper;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public void delete(UUID id) {
         teacherRepository.findById(id).ifPresent(teacher -> {
@@ -30,8 +35,13 @@ public class TeacherServiceImpl implements TeacherService{
         Teacher teacher = teacherRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Teacher with id: " + id + " was not found"));
 
+        checkEmailAvailable(request.email(), teacher.getEmail());
 
         teacherMapper.toTeacherFromDto(request, teacher);
+
+        if (request.password() != null) {
+            teacher.setPassword(passwordEncoder.encode(request.password()));
+        }
 
         if (request.position() != null) {
             teacher.setPosition(request.position());
@@ -48,5 +58,14 @@ public class TeacherServiceImpl implements TeacherService{
 
     public List<TeacherResponse> getAll() {
         return teacherRepository.findAllByIsActiveTrue().stream().map(teacherMapper::toResponse).toList();
+    }
+
+    private void checkEmailAvailable(String newEmail, String currentEmail) {
+        if (newEmail == null || newEmail.equals(currentEmail)) {
+            return;
+        }
+        if (userRepository.existsByEmail(newEmail)) {
+            throw new ConflictException("User with email " + newEmail + " already exists");
+        }
     }
 }

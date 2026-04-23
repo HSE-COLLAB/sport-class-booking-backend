@@ -1,6 +1,7 @@
 package ru.hse.sportclassbookingbackend.controller;
 
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -35,13 +36,13 @@ public class StudentController {
 
     @PatchMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<StudentResponse> update(@PathVariable UUID id, @RequestBody StudentPatchRequest request) {
+    public ResponseEntity<StudentResponse> update(@PathVariable UUID id, @RequestBody @Valid StudentPatchRequest request) {
         return ResponseEntity.ok(studentService.update(id, request));
     }
 
     @PatchMapping("/{id}/health-group")
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
-    public ResponseEntity<StudentResponse> updateHealthGroup(@PathVariable UUID id, @RequestBody StudentHealthGroupPatchRequest request) {
+    public ResponseEntity<StudentResponse> updateHealthGroup(@PathVariable UUID id, @RequestBody @Valid StudentHealthGroupPatchRequest request) {
         return ResponseEntity.ok(studentService.updateHealthGroup(id, request));
     }
 
@@ -57,9 +58,9 @@ public class StudentController {
         return ResponseEntity.ok(studentService.getAll());
     }
 
-    @PatchMapping("{id}/self-update")
+    @PatchMapping("/{id}/self-update")
     @PreAuthorize("#id == authentication.principal.id")
-    public ResponseEntity<StudentResponse> selfUpdate(@PathVariable UUID id, @RequestBody StudentSelfUpdateRequest request) {
+    public ResponseEntity<StudentResponse> selfUpdate(@PathVariable UUID id, @RequestBody @Valid StudentSelfUpdateRequest request) {
         return ResponseEntity.ok(studentService.selfUpdate(id, request));
     }
 }

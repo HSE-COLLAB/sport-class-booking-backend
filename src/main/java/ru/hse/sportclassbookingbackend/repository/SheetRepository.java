@@ -30,6 +30,7 @@ public interface SheetRepository extends JpaRepository<Sheet, UUID> {
             SELECT CASE WHEN COUNT(s) > 0 THEN TRUE ELSE FALSE END
             FROM Sheet s
             WHERE s.student.id = :studentId
+              AND s.lesson.status = 'ACTIVE'
               AND s.lesson.startTime < :endTime
               AND s.lesson.endTime > :startTime
             """)

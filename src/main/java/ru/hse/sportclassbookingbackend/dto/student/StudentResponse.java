@@ -7,7 +7,6 @@ public record StudentResponse(
         UUID groupId,
         Integer healthGroupId,
         String email,
-        String password,
         String firstName,
         String lastName,
         String middleName,

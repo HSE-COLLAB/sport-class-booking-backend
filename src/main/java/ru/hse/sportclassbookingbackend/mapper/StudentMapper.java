@@ -14,7 +14,6 @@ import ru.hse.sportclassbookingbackend.model.Student;
 public interface StudentMapper {
 
     @Mapping(target = "email", source = "email")
-    @Mapping(target = "password", source = "password")
     @Mapping(target = "firstName", source = "firstName")
     @Mapping(target = "lastName", source = "lastName")
     @Mapping(target = "middleName", source = "middleName")
@@ -30,6 +29,7 @@ public interface StudentMapper {
     @Mapping(target = "group", ignore = true)
     @Mapping(target = "healthGroup", ignore = true)
     @Mapping(target = "campus", ignore = true)
+    @Mapping(target = "isActive", constant = "true")
     Student toEntity(RegisterStudentRequest request);
 
 
@@ -38,8 +38,8 @@ public interface StudentMapper {
     @Mapping(target = "firstName", source = "firstName")
     @Mapping(target = "lastName", source = "lastName")
     @Mapping(target = "middleName", source = "middleName")
-    @Mapping(target = "role", source = "role")
     @Mapping(target = "isActive", source = "isActive")
+    @Mapping(target = "role", ignore = true)
     @Mapping(target = "group", source = "groupId", ignore = true)
     @Mapping(target = "healthGroup", source = "healthGroupId", ignore = true)
     void toStudentFromDto(StudentPatchRequest request, @MappingTarget Student student);
