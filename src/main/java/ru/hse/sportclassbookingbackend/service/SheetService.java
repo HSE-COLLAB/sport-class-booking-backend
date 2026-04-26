@@ -10,6 +10,7 @@ import ru.hse.sportclassbookingbackend.dto.sheet.SheetIdResponse;
 import ru.hse.sportclassbookingbackend.security.UserPrincipal;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,6 +24,6 @@ public interface SheetService {
 
     List<AttendeeResponse> markAttendance(UUID lessonId, BulkAttendanceRequest request, UserPrincipal principal);
 
-    Page<MyLessonResponse> getMyLessons(LessonTimeStatus status, Boolean visited, LocalDateTime from,
+    Page<MyLessonResponse> getMyLessons(Collection<LessonTimeStatus> timeStatuses, Boolean visited, LocalDateTime from,
                                         LocalDateTime to, Pageable pageable, UserPrincipal principal);
 }

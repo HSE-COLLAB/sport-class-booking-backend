@@ -25,7 +25,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final ObjectMapper objectMapper;
 
     private static final AntPathMatcher antPathMatcher = new AntPathMatcher();
-    private static final List<String> SKIP_PATH = List.of("/auth/**");
+    private static final List<String> SKIP_PATH = List.of(
+            "/auth/**",
+            "/v3/api-docs", "/v3/api-docs/**", "/v3/api-docs.yaml",
+            "/swagger-ui.html", "/swagger-ui/**"
+    );
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
