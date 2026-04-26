@@ -9,6 +9,7 @@ import ru.hse.sportclassbookingbackend.model.Lesson;
 import ru.hse.sportclassbookingbackend.model.Sheet;
 
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -49,10 +50,9 @@ public interface SheetRepository extends JpaRepository<Sheet, UUID> {
             AND (cast(:to as timestamp) IS NULL OR l.startTime <= :to)
             AND (cast(:visited as boolean) IS NULL OR s.visited = :visited)
             AND (
-                cast(:status as string) = 'UPCOMING' AND l.startTime > :now
-                OR cast(:status as string) = 'ONGOING' AND l.startTime <= :now AND l.endTime >= :now
-                OR cast(:status as string) = 'PAST' AND l.endTime < :now
-                OR cast(:status as string) IS NULL AND l.endTime >= :now
+                ('UPCOMING' IN :timeStatuses AND l.startTime > :now)
+                OR ('ONGOING' IN :timeStatuses AND l.startTime <= :now AND l.endTime >= :now)
+                OR ('PAST' IN :timeStatuses AND l.endTime < :now)
             )
             """)
     Page<Sheet> findAllMyLessons(
@@ -60,7 +60,7 @@ public interface SheetRepository extends JpaRepository<Sheet, UUID> {
             @Param("from") OffsetDateTime from,
             @Param("to") OffsetDateTime to,
             @Param("visited") Boolean visited,
-            @Param("status") String status,
+            @Param("timeStatuses") Collection<String> timeStatuses,
             @Param("now") OffsetDateTime now,
             Pageable pageable
     );

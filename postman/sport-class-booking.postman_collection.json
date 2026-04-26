@@ -108,6 +108,36 @@
                 "url": {"raw": "{{baseUrl}}/auth/register/teacher", "host":["{{baseUrl}}"], "path":["auth","register","teacher"]},
                 "body": {"mode":"raw","raw":"{\n  \"firstName\": \"New\",\n  \"lastName\": \"Teacher\",\n  \"middleName\": \"Test\",\n  \"email\": \"newteacher@mail.ru\",\n  \"password\": \"password123\",\n  \"position\": \"Доцент\",\n  \"campusId\": 1\n}"}
               }
+            },
+            {
+              "name": "POST /auth/register/teacher — 409 (дубликат email)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 409', () => pm.response.to.have.status(409));"],"type":"text/javascript"}}],
+              "request": {
+                "method": "POST",
+                "header": [{"key":"Content-Type","value":"application/json"}],
+                "url": {"raw": "{{baseUrl}}/auth/register/teacher", "host":["{{baseUrl}}"], "path":["auth","register","teacher"]},
+                "body": {"mode":"raw","raw":"{\n  \"firstName\": \"Dup\",\n  \"lastName\": \"T\",\n  \"middleName\": \"X\",\n  \"email\": \"teacher1@mail.ru\",\n  \"password\": \"password\",\n  \"position\": \"Доцент\",\n  \"campusId\": 3\n}"}
+              }
+            },
+            {
+              "name": "POST /auth/register/teacher — 400 (несуществующий campusId)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 400', () => pm.response.to.have.status(400));"],"type":"text/javascript"}}],
+              "request": {
+                "method": "POST",
+                "header": [{"key":"Content-Type","value":"application/json"}],
+                "url": {"raw": "{{baseUrl}}/auth/register/teacher", "host":["{{baseUrl}}"], "path":["auth","register","teacher"]},
+                "body": {"mode":"raw","raw":"{\n  \"firstName\": \"X\",\n  \"lastName\": \"Y\",\n  \"middleName\": \"Z\",\n  \"email\": \"badcampus-teacher@mail.ru\",\n  \"password\": \"password\",\n  \"position\": \"Доцент\",\n  \"campusId\": 9999\n}"}
+              }
+            },
+            {
+              "name": "POST /auth/register/teacher — 400 (невалидный email)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 400', () => pm.response.to.have.status(400));"],"type":"text/javascript"}}],
+              "request": {
+                "method": "POST",
+                "header": [{"key":"Content-Type","value":"application/json"}],
+                "url": {"raw": "{{baseUrl}}/auth/register/teacher", "host":["{{baseUrl}}"], "path":["auth","register","teacher"]},
+                "body": {"mode":"raw","raw":"{\n  \"firstName\": \"X\",\n  \"lastName\": \"Y\",\n  \"middleName\": \"Z\",\n  \"email\": \"not-an-email\",\n  \"password\": \"password\",\n  \"position\": \"Доцент\",\n  \"campusId\": 1\n}"}
+              }
             }
           ]
         },
@@ -481,8 +511,8 @@
               "request": {"method":"POST","url":{"raw":"{{baseUrl}}/lessons/{{lessonVolleyballEveningId}}/sheets","host":["{{baseUrl}}"],"path":["lessons","{{lessonVolleyballEveningId}}","sheets"]}}
             },
             {
-              "name": "Student3 (health=3) → Пилатес — 201 (health подходит)",
-              "description": "Пилатес разрешён для health 1,2,3. Student3 может записаться.",
+              "name": "Student3 (health=3) → Шахматы — 201 (health подходит)",
+              "description": "Шахматы разрешены для health 1,2,3,4. Student3 (health=3) может записаться.",
               "event": [
                 {"listen":"prerequest","script":{"type":"text/javascript","exec":["pm.request.headers.upsert({ key: 'X-Dev-User-Id', value: pm.collectionVariables.get('student3Id') });"]}},
                 {"listen":"test","script":{"exec":["pm.test('Status is 201', () => pm.response.to.have.status(201));"],"type":"text/javascript"}}
@@ -587,7 +617,66 @@
           ]
         },
         {
-          "name": "07. Forbidden Operations (должны возвращать 403)",
+          "name": "07. Self Update & Profile",
+          "description": "Student1 обновляет свой профиль, смотрит свои данные, проверяет запреты на чужое.",
+          "item": [
+            {
+              "name": "PATCH /students/{self}/self-update — 200",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"PATCH",
+                "header":[{"key":"Content-Type","value":"application/json"}],
+                "url":{"raw":"{{baseUrl}}/students/{{student1Id}}/self-update","host":["{{baseUrl}}"],"path":["students","{{student1Id}}","self-update"]},
+                "body":{"mode":"raw","raw":"{\"firstName\": \"Student1Updated\"}"}
+              }
+            },
+            {
+              "name": "PATCH /students/{other}/self-update — 403 (нельзя чужой)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 403', () => pm.response.to.have.status(403));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"PATCH",
+                "header":[{"key":"Content-Type","value":"application/json"}],
+                "url":{"raw":"{{baseUrl}}/students/{{student2Id}}/self-update","host":["{{baseUrl}}"],"path":["students","{{student2Id}}","self-update"]},
+                "body":{"mode":"raw","raw":"{\"firstName\": \"Hack\"}"}
+              }
+            },
+            {
+              "name": "GET /students/{self} — 200",
+              "event": [{"listen":"test","script":{"exec":[
+                "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                "pm.test('Own id returned', () => pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('student1Id')));"
+              ],"type":"text/javascript"}}],
+              "request": {"method":"GET","url":{"raw":"{{baseUrl}}/students/{{student1Id}}","host":["{{baseUrl}}"],"path":["students","{{student1Id}}"]}}
+            },
+            {
+              "name": "GET /students/{other} — 403 (только admin/teacher или self)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 403', () => pm.response.to.have.status(403));"],"type":"text/javascript"}}],
+              "request": {"method":"GET","url":{"raw":"{{baseUrl}}/students/{{student2Id}}","host":["{{baseUrl}}"],"path":["students","{{student2Id}}"]}}
+            },
+            {
+              "name": "GET /students — 403 (студент не может листать)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 403', () => pm.response.to.have.status(403));"],"type":"text/javascript"}}],
+              "request": {"method":"GET","url":{"raw":"{{baseUrl}}/students","host":["{{baseUrl}}"],"path":["students"]}}
+            },
+            {
+              "name": "PATCH /students/{self}/health-group — 403 (только admin/teacher)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 403', () => pm.response.to.have.status(403));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"PATCH",
+                "header":[{"key":"Content-Type","value":"application/json"}],
+                "url":{"raw":"{{baseUrl}}/students/{{student1Id}}/health-group","host":["{{baseUrl}}"],"path":["students","{{student1Id}}","health-group"]},
+                "body":{"mode":"raw","raw":"{\"healthGroupId\": 4}"}
+              }
+            },
+            {
+              "name": "GET /teachers — 403 (студент не может листать тичеров)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 403', () => pm.response.to.have.status(403));"],"type":"text/javascript"}}],
+              "request": {"method":"GET","url":{"raw":"{{baseUrl}}/teachers","host":["{{baseUrl}}"],"path":["teachers"]}}
+            }
+          ]
+        },
+        {
+          "name": "08. Forbidden Operations (должны возвращать 403)",
           "item": [
             {
               "name": "POST /lessons — 403",
@@ -792,6 +881,36 @@
                 "url":{"raw":"{{baseUrl}}/lessons/recurring","host":["{{baseUrl}}"],"path":["lessons","recurring"]},
                 "body":{"mode":"raw","raw":"{\n  \"title\": \"Too long\",\n  \"place\": \"X\",\n  \"startTime\": \"10:00\",\n  \"endTime\": \"11:00\",\n  \"totalPlaces\": 10,\n  \"workoutTypeId\": \"{{workoutTypeVolleyballId}}\",\n  \"campusId\": 3,\n  \"daysOfWeek\": [\"MONDAY\"],\n  \"startDate\": \"2099-01-01\",\n  \"endDate\": \"2101-01-01\"\n}"}
               }
+            },
+            {
+              "name": "POST /lessons/recurring — 400 (endDate < startDate)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 400', () => pm.response.to.have.status(400));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"POST",
+                "header":[{"key":"Content-Type","value":"application/json"}],
+                "url":{"raw":"{{baseUrl}}/lessons/recurring","host":["{{baseUrl}}"],"path":["lessons","recurring"]},
+                "body":{"mode":"raw","raw":"{\n  \"title\": \"Bad dates\",\n  \"place\": \"X\",\n  \"startTime\": \"10:00\",\n  \"endTime\": \"11:00\",\n  \"totalPlaces\": 10,\n  \"workoutTypeId\": \"{{workoutTypeVolleyballId}}\",\n  \"campusId\": 3,\n  \"daysOfWeek\": [\"MONDAY\"],\n  \"startDate\": \"2099-06-01\",\n  \"endDate\": \"2099-05-01\"\n}"}
+              }
+            },
+            {
+              "name": "POST /lessons/recurring — 400 (endTime ≤ startTime)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 400', () => pm.response.to.have.status(400));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"POST",
+                "header":[{"key":"Content-Type","value":"application/json"}],
+                "url":{"raw":"{{baseUrl}}/lessons/recurring","host":["{{baseUrl}}"],"path":["lessons","recurring"]},
+                "body":{"mode":"raw","raw":"{\n  \"title\": \"Bad times\",\n  \"place\": \"X\",\n  \"startTime\": \"11:00\",\n  \"endTime\": \"10:00\",\n  \"totalPlaces\": 10,\n  \"workoutTypeId\": \"{{workoutTypeVolleyballId}}\",\n  \"campusId\": 3,\n  \"daysOfWeek\": [\"MONDAY\"],\n  \"startDate\": \"2099-05-01\",\n  \"endDate\": \"2099-06-01\"\n}"}
+              }
+            },
+            {
+              "name": "POST /lessons/recurring — 400 (пустой daysOfWeek)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 400', () => pm.response.to.have.status(400));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"POST",
+                "header":[{"key":"Content-Type","value":"application/json"}],
+                "url":{"raw":"{{baseUrl}}/lessons/recurring","host":["{{baseUrl}}"],"path":["lessons","recurring"]},
+                "body":{"mode":"raw","raw":"{\n  \"title\": \"No days\",\n  \"place\": \"X\",\n  \"startTime\": \"10:00\",\n  \"endTime\": \"11:00\",\n  \"totalPlaces\": 10,\n  \"workoutTypeId\": \"{{workoutTypeVolleyballId}}\",\n  \"campusId\": 3,\n  \"daysOfWeek\": [],\n  \"startDate\": \"2099-05-01\",\n  \"endDate\": \"2099-06-01\"\n}"}
+              }
             }
           ]
         },
@@ -972,6 +1091,26 @@
               }
             },
             {
+              "name": "POST /workout-types — 400 (пустой allowedHealthGroupIds)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 400', () => pm.response.to.have.status(400));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"POST",
+                "header":[{"key":"Content-Type","value":"application/json"}],
+                "url":{"raw":"{{baseUrl}}/workout-types","host":["{{baseUrl}}"],"path":["workout-types"]},
+                "body":{"mode":"raw","raw":"{\"title\":\"Badworkout\",\"allowedHealthGroupIds\":[]}"}
+              }
+            },
+            {
+              "name": "POST /workout-types — 400 (пустой title)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 400', () => pm.response.to.have.status(400));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"POST",
+                "header":[{"key":"Content-Type","value":"application/json"}],
+                "url":{"raw":"{{baseUrl}}/workout-types","host":["{{baseUrl}}"],"path":["workout-types"]},
+                "body":{"mode":"raw","raw":"{\"title\":\"\",\"allowedHealthGroupIds\":[1]}"}
+              }
+            },
+            {
               "name": "PATCH /workout-types/{id} — 200",
               "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
               "request": {
@@ -989,7 +1128,91 @@
           ]
         },
         {
-          "name": "08. Forbidden Operations",
+          "name": "08. Self Update & View",
+          "description": "Teacher1 обновляет себя, смотрит студентов/учителей, меняет health-group у студента.",
+          "item": [
+            {
+              "name": "PATCH /teachers/{self} — 200 (self update)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"PATCH",
+                "header":[{"key":"Content-Type","value":"application/json"}],
+                "url":{"raw":"{{baseUrl}}/teachers/{{teacher1Id}}","host":["{{baseUrl}}"],"path":["teachers","{{teacher1Id}}"]},
+                "body":{"mode":"raw","raw":"{\"position\": \"Старший преподаватель\"}"}
+              }
+            },
+            {
+              "name": "PATCH /teachers/{other} — 403 (нельзя чужого)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 403', () => pm.response.to.have.status(403));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"PATCH",
+                "header":[{"key":"Content-Type","value":"application/json"}],
+                "url":{"raw":"{{baseUrl}}/teachers/{{teacher2Id}}","host":["{{baseUrl}}"],"path":["teachers","{{teacher2Id}}"]},
+                "body":{"mode":"raw","raw":"{\"position\": \"Hack\"}"}
+              }
+            },
+            {
+              "name": "GET /teachers — 200 (тичер может листать)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+              "request": {"method":"GET","url":{"raw":"{{baseUrl}}/teachers","host":["{{baseUrl}}"],"path":["teachers"]}}
+            },
+            {
+              "name": "GET /teachers/{self} — 200",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+              "request": {"method":"GET","url":{"raw":"{{baseUrl}}/teachers/{{teacher1Id}}","host":["{{baseUrl}}"],"path":["teachers","{{teacher1Id}}"]}}
+            },
+            {
+              "name": "GET /teachers/{other} — 403 (только admin/self)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 403', () => pm.response.to.have.status(403));"],"type":"text/javascript"}}],
+              "request": {"method":"GET","url":{"raw":"{{baseUrl}}/teachers/{{teacher2Id}}","host":["{{baseUrl}}"],"path":["teachers","{{teacher2Id}}"]}}
+            },
+            {
+              "name": "GET /students — 200 (тичер может листать студентов)",
+              "event": [{"listen":"test","script":{"exec":[
+                "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                "pm.test('Array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+              ],"type":"text/javascript"}}],
+              "request": {"method":"GET","url":{"raw":"{{baseUrl}}/students","host":["{{baseUrl}}"],"path":["students"]}}
+            },
+            {
+              "name": "GET /students/{any} — 200 (тичер может смотреть студентов)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+              "request": {"method":"GET","url":{"raw":"{{baseUrl}}/students/{{student1Id}}","host":["{{baseUrl}}"],"path":["students","{{student1Id}}"]}}
+            },
+            {
+              "name": "PATCH /students/{id}/health-group — 200 (тичер меняет health)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"PATCH",
+                "header":[{"key":"Content-Type","value":"application/json"}],
+                "url":{"raw":"{{baseUrl}}/students/{{student2Id}}/health-group","host":["{{baseUrl}}"],"path":["students","{{student2Id}}","health-group"]},
+                "body":{"mode":"raw","raw":"{\"healthGroupId\": 1}"}
+              }
+            },
+            {
+              "name": "PATCH /students/{id}/health-group — 404 (bad healthGroupId)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 404', () => pm.response.to.have.status(404));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"PATCH",
+                "header":[{"key":"Content-Type","value":"application/json"}],
+                "url":{"raw":"{{baseUrl}}/students/{{student2Id}}/health-group","host":["{{baseUrl}}"],"path":["students","{{student2Id}}","health-group"]},
+                "body":{"mode":"raw","raw":"{\"healthGroupId\": 99}"}
+              }
+            },
+            {
+              "name": "PATCH /students/{id} — 403 (общий PATCH только admin)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 403', () => pm.response.to.have.status(403));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"PATCH",
+                "header":[{"key":"Content-Type","value":"application/json"}],
+                "url":{"raw":"{{baseUrl}}/students/{{student2Id}}","host":["{{baseUrl}}"],"path":["students","{{student2Id}}"]},
+                "body":{"mode":"raw","raw":"{\"firstName\": \"Hack\"}"}
+              }
+            }
+          ]
+        },
+        {
+          "name": "09. Forbidden Operations",
           "item": [
             {
               "name": "POST /lessons/{id}/sheets — 403",
@@ -1015,6 +1238,11 @@
                 "url":{"raw":"{{baseUrl}}/health-groups/1","host":["{{baseUrl}}"],"path":["health-groups","1"]},
                 "body":{"mode":"raw","raw":"{\"description\":\"Hack\"}"}
               }
+            },
+            {
+              "name": "DELETE /students/{other} — 403 (нельзя чужого)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 403', () => pm.response.to.have.status(403));"],"type":"text/javascript"}}],
+              "request": {"method":"DELETE","url":{"raw":"{{baseUrl}}/students/{{student2Id}}","host":["{{baseUrl}}"],"path":["students","{{student2Id}}"]}}
             }
           ]
         }
@@ -1174,7 +1402,133 @@
           ]
         },
         {
-          "name": "05. Forbidden Operations",
+          "name": "05. Manage Students",
+          "description": "Админ: GET/PATCH/DELETE студентов.",
+          "item": [
+            {
+              "name": "GET /students — 200",
+              "event": [{"listen":"test","script":{"exec":[
+                "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                "pm.test('Array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+              ],"type":"text/javascript"}}],
+              "request": {"method":"GET","url":{"raw":"{{baseUrl}}/students","host":["{{baseUrl}}"],"path":["students"]}}
+            },
+            {
+              "name": "GET /students/{id} — 200",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+              "request": {"method":"GET","url":{"raw":"{{baseUrl}}/students/{{student1Id}}","host":["{{baseUrl}}"],"path":["students","{{student1Id}}"]}}
+            },
+            {
+              "name": "GET /students/{nonexistent} — 404",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 404', () => pm.response.to.have.status(404));"],"type":"text/javascript"}}],
+              "request": {"method":"GET","url":{"raw":"{{baseUrl}}/students/00000000-0000-0000-0000-000000000000","host":["{{baseUrl}}"],"path":["students","00000000-0000-0000-0000-000000000000"]}}
+            },
+            {
+              "name": "PATCH /students/{id} — 200 (смена имени)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"PATCH",
+                "header":[{"key":"Content-Type","value":"application/json"}],
+                "url":{"raw":"{{baseUrl}}/students/{{student6Id}}","host":["{{baseUrl}}"],"path":["students","{{student6Id}}"]},
+                "body":{"mode":"raw","raw":"{\"firstName\": \"Student6Renamed\"}"}
+              }
+            },
+            {
+              "name": "PATCH /students/{id} — 200 (смена group и health)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"PATCH",
+                "header":[{"key":"Content-Type","value":"application/json"}],
+                "url":{"raw":"{{baseUrl}}/students/{{student6Id}}","host":["{{baseUrl}}"],"path":["students","{{student6Id}}"]},
+                "body":{"mode":"raw","raw":"{\"groupId\": \"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\", \"healthGroupId\": 3}"}
+              }
+            },
+            {
+              "name": "PATCH /students/{id}/health-group — 200",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"PATCH",
+                "header":[{"key":"Content-Type","value":"application/json"}],
+                "url":{"raw":"{{baseUrl}}/students/{{student6Id}}/health-group","host":["{{baseUrl}}"],"path":["students","{{student6Id}}","health-group"]},
+                "body":{"mode":"raw","raw":"{\"healthGroupId\": 2}"}
+              }
+            },
+            {
+              "name": "PATCH /students/{id}/health-group — 404 (bad healthGroupId)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 404', () => pm.response.to.have.status(404));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"PATCH",
+                "header":[{"key":"Content-Type","value":"application/json"}],
+                "url":{"raw":"{{baseUrl}}/students/{{student6Id}}/health-group","host":["{{baseUrl}}"],"path":["students","{{student6Id}}","health-group"]},
+                "body":{"mode":"raw","raw":"{\"healthGroupId\": 99}"}
+              }
+            },
+            {
+              "name": "DELETE /students/{student5Id} — 204 (deactivate)",
+              "description": "Деактивирует Student5 (Пермь) — в других тестах на него ничего не завязано.",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 204', () => pm.response.to.have.status(204));"],"type":"text/javascript"}}],
+              "request": {"method":"DELETE","url":{"raw":"{{baseUrl}}/students/{{student5Id}}","host":["{{baseUrl}}"],"path":["students","{{student5Id}}"]}}
+            },
+            {
+              "name": "GET /students после деактивации — нет Student5",
+              "event": [{"listen":"test","script":{"exec":[
+                "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                "pm.test('Student5 not in active list', () => pm.expect(pm.response.json().some(s => s.id === pm.collectionVariables.get('student5Id'))).to.be.false);"
+              ],"type":"text/javascript"}}],
+              "request": {"method":"GET","url":{"raw":"{{baseUrl}}/students","host":["{{baseUrl}}"],"path":["students"]}}
+            }
+          ]
+        },
+        {
+          "name": "06. Manage Teachers",
+          "description": "Админ: GET/PATCH/DELETE учителей.",
+          "item": [
+            {
+              "name": "GET /teachers — 200",
+              "event": [{"listen":"test","script":{"exec":[
+                "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                "pm.test('Array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+              ],"type":"text/javascript"}}],
+              "request": {"method":"GET","url":{"raw":"{{baseUrl}}/teachers","host":["{{baseUrl}}"],"path":["teachers"]}}
+            },
+            {
+              "name": "GET /teachers/{id} — 200",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+              "request": {"method":"GET","url":{"raw":"{{baseUrl}}/teachers/{{teacher1Id}}","host":["{{baseUrl}}"],"path":["teachers","{{teacher1Id}}"]}}
+            },
+            {
+              "name": "GET /teachers/{nonexistent} — 404",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 404', () => pm.response.to.have.status(404));"],"type":"text/javascript"}}],
+              "request": {"method":"GET","url":{"raw":"{{baseUrl}}/teachers/00000000-0000-0000-0000-000000000000","host":["{{baseUrl}}"],"path":["teachers","00000000-0000-0000-0000-000000000000"]}}
+            },
+            {
+              "name": "PATCH /teachers/{id} — 200 (смена position)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"PATCH",
+                "header":[{"key":"Content-Type","value":"application/json"}],
+                "url":{"raw":"{{baseUrl}}/teachers/{{teacher1Id}}","host":["{{baseUrl}}"],"path":["teachers","{{teacher1Id}}"]},
+                "body":{"mode":"raw","raw":"{\"position\": \"Главный тренер\"}"}
+              }
+            },
+            {
+              "name": "DELETE /teachers/{teacher3Id} — 204 (deactivate)",
+              "description": "Деактивирует Teacher3 (Пермь). Его единственный урок уже отменён в AS TEACHER.",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 204', () => pm.response.to.have.status(204));"],"type":"text/javascript"}}],
+              "request": {"method":"DELETE","url":{"raw":"{{baseUrl}}/teachers/{{teacher3Id}}","host":["{{baseUrl}}"],"path":["teachers","{{teacher3Id}}"]}}
+            },
+            {
+              "name": "GET /teachers после деактивации — нет Teacher3",
+              "event": [{"listen":"test","script":{"exec":[
+                "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                "pm.test('Teacher3 not in active list', () => pm.expect(pm.response.json().some(t => t.id === pm.collectionVariables.get('teacher3Id'))).to.be.false);"
+              ],"type":"text/javascript"}}],
+              "request": {"method":"GET","url":{"raw":"{{baseUrl}}/teachers","host":["{{baseUrl}}"],"path":["teachers"]}}
+            }
+          ]
+        },
+        {
+          "name": "07. Forbidden Operations",
           "item": [
             {
               "name": "POST /lessons/{id}/sheets — 403 (админ не записывается)",
@@ -1190,6 +1544,337 @@
               "name": "GET /lessons myHealthGroup=true — 400",
               "event": [{"listen":"test","script":{"exec":["pm.test('Status is 400', () => pm.response.to.have.status(400));"],"type":"text/javascript"}}],
               "request": {"method":"GET","url":{"raw":"{{baseUrl}}/lessons?campusId=3&myHealthGroup=true","host":["{{baseUrl}}"],"path":["lessons"],"query":[{"key":"campusId","value":"3"},{"key":"myHealthGroup","value":"true"}]}}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "JWT Flow (stand-ready)",
+      "description": "E2E-сценарии через настоящий JWT (без DevAuthFilter).\n\nРаботает и в local, и в stand-профиле. В stand DevAuthFilter выключен (bean не создаётся — @ConditionalOnProperty), поэтому эта папка — единственная, которая там даст зелёные тесты.\n\nКаждая подпапка: (1) логинится тестовым юзером, (2) кладёт accessToken + refreshToken в collectionVariables, (3) дальнейшие запросы идут с Authorization: Bearer {{<role>AccessToken}}.",
+      "item": [
+        {
+          "name": "01. Unauthenticated",
+          "description": "Реакция filter chain без токена и с битым токеном.",
+          "item": [
+            {
+              "name": "GET /lessons без Authorization — 403",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 403', () => pm.response.to.have.status(403));"],"type":"text/javascript"}}],
+              "request": {"method":"GET","url":{"raw":"{{baseUrl}}/lessons?campusId=3","host":["{{baseUrl}}"],"path":["lessons"],"query":[{"key":"campusId","value":"3"}]}}
+            },
+            {
+              "name": "GET /workout-types без Authorization — 403",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 403', () => pm.response.to.have.status(403));"],"type":"text/javascript"}}],
+              "request": {"method":"GET","url":{"raw":"{{baseUrl}}/workout-types","host":["{{baseUrl}}"],"path":["workout-types"]}}
+            },
+            {
+              "name": "GET /lessons с битым Bearer — 401 (Invalid or expired token)",
+              "event": [{"listen":"test","script":{"exec":[
+                "pm.test('Status is 401', () => pm.response.to.have.status(401));",
+                "pm.test('Body has errors array', () => pm.expect(pm.response.json().errors).to.be.an('array'));"
+              ],"type":"text/javascript"}}],
+              "request": {
+                "method":"GET",
+                "header":[{"key":"Authorization","value":"Bearer this.is.not.a.valid.jwt.token"}],
+                "url":{"raw":"{{baseUrl}}/lessons?campusId=3","host":["{{baseUrl}}"],"path":["lessons"],"query":[{"key":"campusId","value":"3"}]}
+              }
+            },
+            {
+              "name": "POST /auth/login (публичный путь) — 200",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"POST",
+                "header":[{"key":"Content-Type","value":"application/json"}],
+                "url":{"raw":"{{baseUrl}}/auth/login","host":["{{baseUrl}}"],"path":["auth","login"]},
+                "body":{"mode":"raw","raw":"{\n  \"email\": \"student1@mail.ru\",\n  \"password\": \"test\"\n}"}
+              }
+            }
+          ]
+        },
+        {
+          "name": "02. Student (real JWT)",
+          "description": "Student1 → токены → Bearer → базовые сценарии + refresh/logout.",
+          "item": [
+            {
+              "name": "POST /auth/login as Student1 → capture tokens",
+              "event": [{"listen":"test","script":{"exec":[
+                "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                "const j = pm.response.json();",
+                "pm.collectionVariables.set('studentAccessToken', j.accessToken);",
+                "pm.collectionVariables.set('studentRefreshToken', j.refreshToken);",
+                "pm.test('Has tokens', () => { pm.expect(j.accessToken).to.be.a('string'); pm.expect(j.refreshToken).to.be.a('string'); });"
+              ],"type":"text/javascript"}}],
+              "request": {
+                "method":"POST",
+                "header":[{"key":"Content-Type","value":"application/json"}],
+                "url":{"raw":"{{baseUrl}}/auth/login","host":["{{baseUrl}}"],"path":["auth","login"]},
+                "body":{"mode":"raw","raw":"{\n  \"email\": \"student1@mail.ru\",\n  \"password\": \"test\"\n}"}
+              }
+            },
+            {
+              "name": "GET /workout-types Bearer — 200",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"GET",
+                "header":[{"key":"Authorization","value":"Bearer {{studentAccessToken}}"}],
+                "url":{"raw":"{{baseUrl}}/workout-types","host":["{{baseUrl}}"],"path":["workout-types"]}
+              }
+            },
+            {
+              "name": "GET /lessons?campusId=3 Bearer — 200",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"GET",
+                "header":[{"key":"Authorization","value":"Bearer {{studentAccessToken}}"}],
+                "url":{"raw":"{{baseUrl}}/lessons?campusId=3","host":["{{baseUrl}}"],"path":["lessons"],"query":[{"key":"campusId","value":"3"}]}
+              }
+            },
+            {
+              "name": "GET /lessons/my Bearer — 200",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"GET",
+                "header":[{"key":"Authorization","value":"Bearer {{studentAccessToken}}"}],
+                "url":{"raw":"{{baseUrl}}/lessons/my","host":["{{baseUrl}}"],"path":["lessons","my"]}
+              }
+            },
+            {
+              "name": "POST /lessons/{basketball}/sheets Bearer — 201",
+              "event": [{"listen":"test","script":{"exec":[
+                "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                "pm.collectionVariables.set('jwtStudentSheetId', pm.response.json().id);"
+              ],"type":"text/javascript"}}],
+              "request": {
+                "method":"POST",
+                "header":[{"key":"Authorization","value":"Bearer {{studentAccessToken}}"}],
+                "url":{"raw":"{{baseUrl}}/lessons/{{lessonBasketballId}}/sheets","host":["{{baseUrl}}"],"path":["lessons","{{lessonBasketballId}}","sheets"]}
+              }
+            },
+            {
+              "name": "POST /lessons Bearer — 403 (student не создаёт уроки)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 403', () => pm.response.to.have.status(403));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"POST",
+                "header":[
+                  {"key":"Authorization","value":"Bearer {{studentAccessToken}}"},
+                  {"key":"Content-Type","value":"application/json"}
+                ],
+                "url":{"raw":"{{baseUrl}}/lessons","host":["{{baseUrl}}"],"path":["lessons"]},
+                "body":{"mode":"raw","raw":"{\"title\":\"Hack\",\"place\":\"X\",\"startTime\":\"2099-01-01T10:00:00\",\"endTime\":\"2099-01-01T11:00:00\",\"totalPlaces\":10,\"workoutTypeId\":\"{{workoutTypeVolleyballId}}\",\"campusId\":3}"}
+              }
+            },
+            {
+              "name": "DELETE /lessons/{basketball}/sheets/{id} Bearer — 204",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 204', () => pm.response.to.have.status(204));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"DELETE",
+                "header":[{"key":"Authorization","value":"Bearer {{studentAccessToken}}"}],
+                "url":{"raw":"{{baseUrl}}/lessons/{{lessonBasketballId}}/sheets/{{jwtStudentSheetId}}","host":["{{baseUrl}}"],"path":["lessons","{{lessonBasketballId}}","sheets","{{jwtStudentSheetId}}"]}
+              }
+            },
+            {
+              "name": "POST /auth/refresh — 200, ротация accessToken",
+              "event": [{"listen":"test","script":{"exec":[
+                "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                "const j = pm.response.json();",
+                "pm.collectionVariables.set('studentAccessToken', j.accessToken);",
+                "pm.test('Refresh token stable', () => pm.expect(j.refreshToken).to.eql(pm.collectionVariables.get('studentRefreshToken')));"
+              ],"type":"text/javascript"}}],
+              "request": {
+                "method":"POST",
+                "header":[{"key":"X-Refresh-Token","value":"{{studentRefreshToken}}"}],
+                "url":{"raw":"{{baseUrl}}/auth/refresh","host":["{{baseUrl}}"],"path":["auth","refresh"]}
+              }
+            },
+            {
+              "name": "GET /lessons/my с новым accessToken — 200",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"GET",
+                "header":[{"key":"Authorization","value":"Bearer {{studentAccessToken}}"}],
+                "url":{"raw":"{{baseUrl}}/lessons/my","host":["{{baseUrl}}"],"path":["lessons","my"]}
+              }
+            },
+            {
+              "name": "POST /auth/logout — 204",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 204', () => pm.response.to.have.status(204));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"POST",
+                "header":[{"key":"X-Refresh-Token","value":"{{studentRefreshToken}}"}],
+                "url":{"raw":"{{baseUrl}}/auth/logout","host":["{{baseUrl}}"],"path":["auth","logout"]}
+              }
+            },
+            {
+              "name": "POST /auth/refresh после logout — 401",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 401', () => pm.response.to.have.status(401));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"POST",
+                "header":[{"key":"X-Refresh-Token","value":"{{studentRefreshToken}}"}],
+                "url":{"raw":"{{baseUrl}}/auth/refresh","host":["{{baseUrl}}"],"path":["auth","refresh"]}
+              }
+            }
+          ]
+        },
+        {
+          "name": "03. Teacher (real JWT)",
+          "description": "Teacher1 (НН) — создаёт, редактирует, отменяет свой урок через Bearer.",
+          "item": [
+            {
+              "name": "POST /auth/login as Teacher1 → tokens",
+              "event": [{"listen":"test","script":{"exec":[
+                "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                "const j = pm.response.json();",
+                "pm.collectionVariables.set('teacherAccessToken', j.accessToken);",
+                "pm.collectionVariables.set('teacherRefreshToken', j.refreshToken);"
+              ],"type":"text/javascript"}}],
+              "request": {
+                "method":"POST",
+                "header":[{"key":"Content-Type","value":"application/json"}],
+                "url":{"raw":"{{baseUrl}}/auth/login","host":["{{baseUrl}}"],"path":["auth","login"]},
+                "body":{"mode":"raw","raw":"{\n  \"email\": \"teacher1@mail.ru\",\n  \"password\": \"test\"\n}"}
+              }
+            },
+            {
+              "name": "GET /lessons?campusId=3 Bearer — 200",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"GET",
+                "header":[{"key":"Authorization","value":"Bearer {{teacherAccessToken}}"}],
+                "url":{"raw":"{{baseUrl}}/lessons?campusId=3","host":["{{baseUrl}}"],"path":["lessons"],"query":[{"key":"campusId","value":"3"}]}
+              }
+            },
+            {
+              "name": "POST /lessons Bearer — 201 (свой кампус, без teacherId)",
+              "event": [{"listen":"test","script":{"exec":[
+                "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                "pm.test('Teacher is Teacher1', () => pm.expect(pm.response.json().teacher.id).to.eql(pm.collectionVariables.get('teacher1Id')));",
+                "pm.collectionVariables.set('jwtTeacherLessonId', pm.response.json().id);"
+              ],"type":"text/javascript"}}],
+              "request": {
+                "method":"POST",
+                "header":[
+                  {"key":"Authorization","value":"Bearer {{teacherAccessToken}}"},
+                  {"key":"Content-Type","value":"application/json"}
+                ],
+                "url":{"raw":"{{baseUrl}}/lessons","host":["{{baseUrl}}"],"path":["lessons"]},
+                "body":{"mode":"raw","raw":"{\"title\":\"JWT created lesson\",\"place\":\"Зал 9\",\"startTime\":\"2099-07-01T10:00:00\",\"endTime\":\"2099-07-01T11:30:00\",\"totalPlaces\":10,\"workoutTypeId\":\"{{workoutTypeVolleyballId}}\",\"campusId\":3}"}
+              }
+            },
+            {
+              "name": "PATCH /lessons/{own} Bearer — 200",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"PATCH",
+                "header":[
+                  {"key":"Authorization","value":"Bearer {{teacherAccessToken}}"},
+                  {"key":"Content-Type","value":"application/json"}
+                ],
+                "url":{"raw":"{{baseUrl}}/lessons/{{jwtTeacherLessonId}}","host":["{{baseUrl}}"],"path":["lessons","{{jwtTeacherLessonId}}"]},
+                "body":{"mode":"raw","raw":"{\"notes\":\"обновлено через JWT\"}"}
+              }
+            },
+            {
+              "name": "POST /lessons/{own}/cancel Bearer — 200",
+              "event": [{"listen":"test","script":{"exec":[
+                "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                "pm.test('Status CANCELLED', () => pm.expect(pm.response.json().status).to.eql('CANCELLED'));"
+              ],"type":"text/javascript"}}],
+              "request": {
+                "method":"POST",
+                "header":[{"key":"Authorization","value":"Bearer {{teacherAccessToken}}"}],
+                "url":{"raw":"{{baseUrl}}/lessons/{{jwtTeacherLessonId}}/cancel","host":["{{baseUrl}}"],"path":["lessons","{{jwtTeacherLessonId}}","cancel"]}
+              }
+            },
+            {
+              "name": "POST /lessons/{id}/sheets Bearer — 403 (teacher не записывается)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 403', () => pm.response.to.have.status(403));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"POST",
+                "header":[{"key":"Authorization","value":"Bearer {{teacherAccessToken}}"}],
+                "url":{"raw":"{{baseUrl}}/lessons/{{lessonVolleyballMorningId}}/sheets","host":["{{baseUrl}}"],"path":["lessons","{{lessonVolleyballMorningId}}","sheets"]}
+              }
+            },
+            {
+              "name": "GET /lessons/my Bearer — 403 (student only)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 403', () => pm.response.to.have.status(403));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"GET",
+                "header":[{"key":"Authorization","value":"Bearer {{teacherAccessToken}}"}],
+                "url":{"raw":"{{baseUrl}}/lessons/my","host":["{{baseUrl}}"],"path":["lessons","my"]}
+              }
+            }
+          ]
+        },
+        {
+          "name": "04. Admin (real JWT)",
+          "description": "Admin1 — полный доступ через Bearer.",
+          "item": [
+            {
+              "name": "POST /auth/login as Admin1 → tokens",
+              "event": [{"listen":"test","script":{"exec":[
+                "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                "const j = pm.response.json();",
+                "pm.collectionVariables.set('adminAccessToken', j.accessToken);",
+                "pm.collectionVariables.set('adminRefreshToken', j.refreshToken);"
+              ],"type":"text/javascript"}}],
+              "request": {
+                "method":"POST",
+                "header":[{"key":"Content-Type","value":"application/json"}],
+                "url":{"raw":"{{baseUrl}}/auth/login","host":["{{baseUrl}}"],"path":["auth","login"]},
+                "body":{"mode":"raw","raw":"{\n  \"email\": \"admin1@mail.ru\",\n  \"password\": \"test\"\n}"}
+              }
+            },
+            {
+              "name": "GET /students Bearer — 200",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"GET",
+                "header":[{"key":"Authorization","value":"Bearer {{adminAccessToken}}"}],
+                "url":{"raw":"{{baseUrl}}/students","host":["{{baseUrl}}"],"path":["students"]}
+              }
+            },
+            {
+              "name": "GET /teachers Bearer — 200",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 200', () => pm.response.to.have.status(200));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"GET",
+                "header":[{"key":"Authorization","value":"Bearer {{adminAccessToken}}"}],
+                "url":{"raw":"{{baseUrl}}/teachers","host":["{{baseUrl}}"],"path":["teachers"]}
+              }
+            },
+            {
+              "name": "POST /student-groups Bearer — 201",
+              "event": [{"listen":"test","script":{"exec":[
+                "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                "pm.collectionVariables.set('jwtAdminGroupId', pm.response.json().id);"
+              ],"type":"text/javascript"}}],
+              "request": {
+                "method":"POST",
+                "header":[
+                  {"key":"Authorization","value":"Bearer {{adminAccessToken}}"},
+                  {"key":"Content-Type","value":"application/json"}
+                ],
+                "url":{"raw":"{{baseUrl}}/student-groups","host":["{{baseUrl}}"],"path":["student-groups"]},
+                "body":{"mode":"raw","raw":"{\"faculty\":\"JWT-test\",\"academicMajor\":\"JWT flow\",\"groupNumber\":\"JWT-2099\"}"}
+              }
+            },
+            {
+              "name": "DELETE /student-groups/{id} Bearer — 204",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 204', () => pm.response.to.have.status(204));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"DELETE",
+                "header":[{"key":"Authorization","value":"Bearer {{adminAccessToken}}"}],
+                "url":{"raw":"{{baseUrl}}/student-groups/{{jwtAdminGroupId}}","host":["{{baseUrl}}"],"path":["student-groups","{{jwtAdminGroupId}}"]}
+              }
+            },
+            {
+              "name": "POST /lessons/{id}/sheets Bearer — 403 (admin не записывается)",
+              "event": [{"listen":"test","script":{"exec":["pm.test('Status is 403', () => pm.response.to.have.status(403));"],"type":"text/javascript"}}],
+              "request": {
+                "method":"POST",
+                "header":[{"key":"Authorization","value":"Bearer {{adminAccessToken}}"}],
+                "url":{"raw":"{{baseUrl}}/lessons/{{lessonVolleyballMorningId}}/sheets","host":["{{baseUrl}}"],"path":["lessons","{{lessonVolleyballMorningId}}","sheets"]}
+              }
             }
           ]
         }

@@ -31,6 +31,7 @@ import ru.hse.sportclassbookingbackend.security.UserPrincipal;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -149,8 +150,9 @@ public class SheetServiceImpl implements SheetService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<MyLessonResponse> getMyLessons(LessonTimeStatus status, Boolean visited, LocalDateTime from,
-                                               LocalDateTime to, Pageable pageable, UserPrincipal principal) {
+    public Page<MyLessonResponse> getMyLessons(Collection<LessonTimeStatus> timeStatuses, Boolean visited,
+                                               LocalDateTime from, LocalDateTime to, Pageable pageable,
+                                               UserPrincipal principal) {
         Student student = findStudentOrThrow(principal.getId());
         ZoneId zoneId = ZoneId.of(student.getCampus().getTimezone());
 
@@ -158,15 +160,20 @@ public class SheetServiceImpl implements SheetService {
             throw new BadRequestException("'to' must be after 'from'");
         }
 
-        Sort sort = resolveSort(status);
+        Collection<LessonTimeStatus> effectiveStatuses = timeStatuses;
+        if (effectiveStatuses == null || effectiveStatuses.isEmpty()) {
+            effectiveStatuses = List.of(LessonTimeStatus.UPCOMING, LessonTimeStatus.ONGOING);
+        }
+        Collection<String> statusStrings = effectiveStatuses.stream().map(Enum::name).toList();
+
+        Sort sort = resolveSort(effectiveStatuses);
         Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
 
         OffsetDateTime fromUtc = from != null ? from.atZone(zoneId).toOffsetDateTime() : null;
         OffsetDateTime toUtc = to != null ? to.atZone(zoneId).toOffsetDateTime() : null;
-        String statusStr = status != null ? status.name() : null;
 
         return sheetRepository.findAllMyLessons(
-                student.getId(), fromUtc, toUtc, visited, statusStr, OffsetDateTime.now(), sortedPageable
+                student.getId(), fromUtc, toUtc, visited, statusStrings, OffsetDateTime.now(), sortedPageable
         ).map(this::toMyLessonResponse);
     }
 
@@ -222,8 +229,11 @@ public class SheetServiceImpl implements SheetService {
                 .orElseThrow(() -> new BadRequestException("Student with id: " + id + " was not found"));
     }
 
-    private Sort resolveSort(LessonTimeStatus status) {
-        if (status == LessonTimeStatus.PAST) {
+    private Sort resolveSort(Collection<LessonTimeStatus> statuses) {
+        boolean onlyPast = statuses != null
+                && statuses.size() == 1
+                && statuses.iterator().next() == LessonTimeStatus.PAST;
+        if (onlyPast) {
             return Sort.by(Sort.Direction.DESC, "lesson.startTime");
         }
         return Sort.by(Sort.Direction.ASC, "lesson.startTime");

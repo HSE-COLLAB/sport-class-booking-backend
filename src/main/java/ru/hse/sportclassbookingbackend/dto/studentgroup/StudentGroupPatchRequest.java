@@ -1,7 +1,9 @@
 package ru.hse.sportclassbookingbackend.dto.studentgroup;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Pattern;
 
+@Schema(description = "PATCH студенческой группы. null-поля игнорируются.")
 public record StudentGroupPatchRequest(
         @Pattern(regexp = "^(?!\\s*$).+", message = "faculty must not be blank")
         String faculty,
