@@ -277,7 +277,7 @@
             },
             {
               "name": "GET /lessons campusId=3 — все будущие в НН",
-              "description": "Без status по умолчанию только UPCOMING+ONGOING и ACTIVE. В НН 5 будущих активных уроков.",
+              "description": "Без status по умолчанию все статусы. В НН 5 будущих активных уроков.",
               "event": [{"listen":"test","script":{"exec":[
                 "pm.test('Status is 200', () => pm.response.to.have.status(200));",
                 "pm.test('Only ACTIVE lessons', () => pm.response.json().content.forEach(l => pm.expect(l.status).to.eql('ACTIVE')));",

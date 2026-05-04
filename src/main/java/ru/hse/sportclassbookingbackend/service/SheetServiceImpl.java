@@ -165,7 +165,7 @@ public class SheetServiceImpl implements SheetService {
 
         Collection<LessonTimeStatus> effectiveStatuses = timeStatuses;
         if (effectiveStatuses == null || effectiveStatuses.isEmpty()) {
-            effectiveStatuses = List.of(LessonTimeStatus.UPCOMING, LessonTimeStatus.ONGOING);
+            effectiveStatuses = List.of(LessonTimeStatus.UPCOMING, LessonTimeStatus.ONGOING, LessonTimeStatus.PAST);
         }
         Collection<String> statusStrings = effectiveStatuses.stream().map(Enum::name).toList();
 
