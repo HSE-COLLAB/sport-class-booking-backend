@@ -8,8 +8,8 @@ import ru.hse.sportclassbookingbackend.dto.auth.AuthResponse;
 import ru.hse.sportclassbookingbackend.dto.auth.LoginRequest;
 import ru.hse.sportclassbookingbackend.dto.auth.RegisterStudentRequest;
 import ru.hse.sportclassbookingbackend.dto.auth.RegisterTeacherRequest;
-import ru.hse.sportclassbookingbackend.exception.BadRequestException;
 import ru.hse.sportclassbookingbackend.exception.ConflictException;
+import ru.hse.sportclassbookingbackend.exception.NotFoundException;
 import ru.hse.sportclassbookingbackend.exception.UnauthorizedException;
 import ru.hse.sportclassbookingbackend.mapper.StudentMapper;
 import ru.hse.sportclassbookingbackend.mapper.TeacherMapper;
@@ -57,7 +57,7 @@ public class AuthServiceImpl implements AuthService {
         Student student = studentMapper.toEntity(request);
         checkEmailNotExists(student.getEmail());
         StudentGroup sg = studentGroupRepository.findById(request.groupId())
-                        .orElseThrow(() -> new BadRequestException("Student group with id " + request.groupId() + " not found"));
+                .orElseThrow(() -> new NotFoundException("Student group with id " + request.groupId() + " not found"));
         student.setGroup(sg);
         student.setRole(Role.STUDENT);
         student.setHealthGroup(healthGroupRepository.getReferenceById(HealthGroup.DEFAULT_HEALTH_GROUP_ID));
@@ -78,10 +78,10 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new UnauthorizedException("User with email " + request.email() + " does not exists"));
+                .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
 
         if (!passwordEncoder.matches(request.password(), user.getPassword()))
-            throw new UnauthorizedException("Invalid password");
+            throw new UnauthorizedException("Invalid email or password");
 
         UUID refreshToken = refreshTokenService.create(user.getId(), user.getRole());
         String accessToken = jwtService.generateAccessToken(user.getId(), user.getRole());
@@ -111,7 +111,7 @@ public class AuthServiceImpl implements AuthService {
 
     private Campus findCampusOrThrow(Integer campusId) {
         return campusRepository.findById(campusId)
-                .orElseThrow(() -> new BadRequestException("Campus with id " + campusId + " not found"));
+                .orElseThrow(() -> new NotFoundException("Campus with id " + campusId + " not found"));
     }
 
     private AuthResponse commonRegisterStage(User user){

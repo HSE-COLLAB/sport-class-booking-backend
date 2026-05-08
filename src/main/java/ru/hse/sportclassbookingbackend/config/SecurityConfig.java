@@ -15,6 +15,8 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import ru.hse.sportclassbookingbackend.security.DevAuthFilter;
 import ru.hse.sportclassbookingbackend.security.JwtAuthenticationFilter;
+import ru.hse.sportclassbookingbackend.security.RestAccessDeniedHandler;
+import ru.hse.sportclassbookingbackend.security.RestAuthenticationEntryPoint;
 
 import java.util.Optional;
 
@@ -40,6 +42,8 @@ public class SecurityConfig {
     private Integer bcryptRounds;
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
+    private final RestAccessDeniedHandler restAccessDeniedHandler;
     private final Optional<DevAuthFilter> devAuthFilter;
 
     @Bean
@@ -60,6 +64,10 @@ public class SecurityConfig {
                             ).permitAll()
                                     .anyRequest().authenticated();
                         }
+                )
+                .exceptionHandling(exceptionHandling -> exceptionHandling
+                        .authenticationEntryPoint(restAuthenticationEntryPoint)
+                        .accessDeniedHandler(restAccessDeniedHandler)
                 )
                 .addFilterBefore(jwtAuthenticationFilter, AuthorizationFilter.class);
 

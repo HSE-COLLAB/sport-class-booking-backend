@@ -16,6 +16,7 @@ import ru.hse.sportclassbookingbackend.dto.sheet.MyLessonResponse;
 import ru.hse.sportclassbookingbackend.dto.sheet.SheetIdResponse;
 import ru.hse.sportclassbookingbackend.exception.BadRequestException;
 import ru.hse.sportclassbookingbackend.exception.ConflictException;
+import ru.hse.sportclassbookingbackend.exception.ForbiddenException;
 import ru.hse.sportclassbookingbackend.exception.NotFoundException;
 import ru.hse.sportclassbookingbackend.mapper.LessonMapper;
 import ru.hse.sportclassbookingbackend.mapper.SheetMapper;
@@ -61,7 +62,7 @@ public class SheetServiceImpl implements SheetService {
             throw new BadRequestException("Cannot register on a lesson that has already started");
         }
         if (!student.getCampus().getId().equals(lesson.getCampus().getId())) {
-            throw new BadRequestException("You can only register on lessons in your campus");
+            throw new ForbiddenException("Cannot register on lessons outside your campus");
         }
         if (!lesson.getWorkoutType().getAllowedHealthGroups().contains(student.getHealthGroup())) {
             throw new BadRequestException("This workout type is not allowed for your health group");
@@ -120,7 +121,7 @@ public class SheetServiceImpl implements SheetService {
         Lesson lesson = findLessonOrThrow(lessonId);
 
         if (principal.getRole() == Role.TEACHER && !lesson.getTeacher().getId().equals(principal.getId())) {
-            throw new BadRequestException("You can only mark attendance on your own lessons");
+            throw new ForbiddenException("Cannot mark attendance on another teacher's lessons");
         }
         if (lesson.getStatus() == LessonStatus.CANCELLED) {
             throw new ConflictException("Cannot mark attendance on a cancelled lesson");
@@ -206,17 +207,17 @@ public class SheetServiceImpl implements SheetService {
         }
         if (principal.getRole() == Role.STUDENT) {
             if (!sheet.getStudent().getId().equals(principal.getId())) {
-                throw new BadRequestException("You can only cancel your own registration");
+                throw new ForbiddenException("Cannot cancel another student's registration");
             }
             return;
         }
         if (principal.getRole() == Role.TEACHER) {
             if (!sheet.getLesson().getTeacher().getId().equals(principal.getId())) {
-                throw new BadRequestException("You can only cancel registrations on your own lessons");
+                throw new ForbiddenException("Cannot cancel registrations on another teacher's lessons");
             }
             return;
         }
-        throw new BadRequestException("Access denied");
+        throw new ForbiddenException("Access denied");
     }
 
     private Lesson findLessonOrThrow(UUID id) {
@@ -226,7 +227,7 @@ public class SheetServiceImpl implements SheetService {
 
     private Student findStudentOrThrow(UUID id) {
         return studentRepository.findById(id)
-                .orElseThrow(() -> new BadRequestException("Student with id: " + id + " was not found"));
+                .orElseThrow(() -> new NotFoundException("Student with id: " + id + " was not found"));
     }
 
     private Sort resolveSort(Collection<LessonTimeStatus> statuses) {

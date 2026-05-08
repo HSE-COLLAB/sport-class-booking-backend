@@ -6,7 +6,6 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.hse.sportclassbookingbackend.dto.workouttype.WorkoutTypePatchRequest;
 import ru.hse.sportclassbookingbackend.dto.workouttype.WorkoutTypeRequest;
 import ru.hse.sportclassbookingbackend.dto.workouttype.WorkoutTypeResponse;
-import ru.hse.sportclassbookingbackend.exception.BadRequestException;
 import ru.hse.sportclassbookingbackend.exception.NotFoundException;
 import ru.hse.sportclassbookingbackend.mapper.WorkoutTypeMapper;
 import ru.hse.sportclassbookingbackend.model.HealthGroup;
@@ -79,7 +78,7 @@ public class WorkoutTypeServiceImpl implements WorkoutTypeService {
     private Set<HealthGroup> findHealthGroupsOrThrow(Set<Integer> ids) {
         List<HealthGroup> found = healthGroupRepository.findAllById(ids);
         if (found.size() != ids.size()) {
-            throw new BadRequestException("Some health group ids were not found");
+            throw new NotFoundException("Some health group ids were not found");
         }
         return new HashSet<>(found);
     }

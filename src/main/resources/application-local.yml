@@ -22,7 +22,7 @@ security:
   development:
     default-user:
       enabled: true
-      role: ADMIN # STUDENT | TEACHER | ADMIN
+      role: STUDENT # STUDENT | TEACHER | ADMIN
 
 
 logging:
