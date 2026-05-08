@@ -98,7 +98,7 @@ public class LessonController {
 
     @Operation(
             summary = "Мои занятия (для студента)",
-            description = "Постраничный список занятий, на которые записан текущий студент. Каждый элемент содержит вложенное поле sheet с id записи и visited. По умолчанию - все статусы."
+            description = "Постраничный список занятий, на которые записан текущий студент или которые ведет преподаватель. Для STUDENT поле sheet всегда заполнено и содержит данные о записи; для TEACHER поле sheet всегда null. По умолчанию - все статусы."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Список моих занятий"),
@@ -110,7 +110,7 @@ public class LessonController {
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @GetMapping("/my")
-    @PreAuthorize("hasRole('STUDENT')")
+    @PreAuthorize("hasAnyRole('STUDENT', 'TEACHER')")
     public ResponseEntity<Page<MyLessonResponse>> getMy(
             @Parameter(description = "Статусы по времени относительно now. По умолчанию — все статусы.")
             @RequestParam(required = false) List<LessonTimeStatus> status,
@@ -124,7 +124,7 @@ public class LessonController {
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         return ResponseEntity.ok(
-                sheetService.getMyLessons(status, visited, from, to, PageRequest.of(page, size), principal)
+                lessonService.getMyLessons(status, visited, from, to, PageRequest.of(page, size), principal)
         );
     }
 

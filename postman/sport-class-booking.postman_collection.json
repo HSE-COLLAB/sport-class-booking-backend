@@ -461,6 +461,143 @@
                 "pm.test('All visited=true', () => pm.response.json().content.forEach(l => pm.expect(l.sheet.visited).to.be.true));"
               ],"type":"text/javascript"}}],
               "request": {"method":"GET","url":{"raw":"{{baseUrl}}/lessons/my?status=PAST&visited=true","host":["{{baseUrl}}"],"path":["lessons","my"],"query":[{"key":"status","value":"PAST"},{"key":"visited","value":"true"}]}}
+            },
+            {
+              "name": "GET /lessons/my - TEACHER1",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                      "pm.test('Non-empty list', () => pm.expect(pm.response.json().totalElements).to.be.above(0));",
+                      "pm.test('All sheet null', () => pm.response.json().content.forEach(l => pm.expect(l.sheet).to.eql(null)));",
+                      "pm.test('Contains cancelled lesson', () => pm.expect(pm.response.json().content.some(l => l.status === 'CANCELLED')).to.be.true);"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/lessons/my",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["lessons", "my"]
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [{"key": "token", "value": "{{teacher1Token}}"}]
+                }
+              }
+            },
+            {
+              "name": "GET /lessons/my - TEACHER1 with visited=true",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+                      "pm.test('Correct error message', () => pm.expect(pm.response.text()).to.include('Parameter \\'visited\\' is only available for STUDENT role'));"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/lessons/my?visited=true",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["lessons", "my"],
+                  "query": [{"key": "visited", "value": "true"}]
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [{"key": "token", "value": "{{teacher1Token}}"}]
+                }
+              }
+            },
+            {
+              "name": "GET /lessons/my - TEACHER2",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                      "pm.test('Only teacher2 lessons', () => pm.response.json().content.forEach(l => pm.expect(l.teacher.id).to.eql('{{teacher2Id}}')));"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/lessons/my",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["lessons", "my"]
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [{"key": "token", "value": "{{teacher2Token}}"}]
+                }
+              }
+            },
+            {
+              "name": "GET /lessons/my - STUDENT1",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                      "pm.test('All sheets filled', () => pm.response.json().content.forEach(l => pm.expect(l.sheet).to.not.eql(null)));"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/lessons/my",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["lessons", "my"]
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [{"key": "token", "value": "{{student1Token}}"}]
+                }
+              }
+            },
+            {
+              "name": "GET /lessons/my - ADMIN1",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status is 403', () => pm.response.to.have.status(403));"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/lessons/my",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["lessons", "my"]
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [{"key": "token", "value": "{{admin1Token}}"}]
+                }
+              }
             }
           ]
         },

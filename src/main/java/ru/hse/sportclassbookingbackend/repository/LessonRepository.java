@@ -72,4 +72,28 @@ public interface LessonRepository extends JpaRepository<Lesson, UUID> {
             @Param("endTime") OffsetDateTime endTime,
             @Param("excludeLessonId") UUID excludeLessonId
     );
+
+    @Query("""
+            SELECT l FROM Lesson l
+            JOIN FETCH l.workoutType wt
+            JOIN FETCH l.teacher t
+            JOIN FETCH l.campus c
+            WHERE l.teacher.id = :teacherId
+            AND (cast(:from as timestamp) IS NULL OR l.endTime >= :from)
+            AND (cast(:to as timestamp) IS NULL OR l.startTime <= :to)
+            AND (
+                :timeStatuses IS NULL
+                OR ('UPCOMING' IN :timeStatuses AND l.startTime > :now)
+                OR ('ONGOING' IN :timeStatuses AND l.startTime <= :now AND l.endTime >= :now)
+                OR ('PAST' IN :timeStatuses AND l.endTime < :now)
+            )
+            """)
+    Page<Lesson> findTeacherLessons(
+            @Param("teacherId") UUID teacherId,
+            @Param("from") OffsetDateTime from,
+            @Param("to") OffsetDateTime to,
+            @Param("timeStatuses") Collection<String> timeStatuses,
+            @Param("now") OffsetDateTime now,
+            Pageable pageable
+    );
 }

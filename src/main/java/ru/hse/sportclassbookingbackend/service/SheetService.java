@@ -24,6 +24,4 @@ public interface SheetService {
 
     List<AttendeeResponse> markAttendance(UUID lessonId, BulkAttendanceRequest request, UserPrincipal principal);
 
-    Page<MyLessonResponse> getMyLessons(Collection<LessonTimeStatus> timeStatuses, Boolean visited, LocalDateTime from,
-                                        LocalDateTime to, Pageable pageable, UserPrincipal principal);
 }
