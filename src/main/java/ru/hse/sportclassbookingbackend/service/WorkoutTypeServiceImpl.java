@@ -78,7 +78,7 @@ public class WorkoutTypeServiceImpl implements WorkoutTypeService {
     private Set<HealthGroup> findHealthGroupsOrThrow(Set<Integer> ids) {
         List<HealthGroup> found = healthGroupRepository.findAllById(ids);
         if (found.size() != ids.size()) {
-            throw new NotFoundException("Some health group ids were not found");
+            throw new NotFoundException("One or more health group ids not found");
         }
         return new HashSet<>(found);
     }

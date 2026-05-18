@@ -65,16 +65,16 @@ public class SheetServiceImpl implements SheetService {
             throw new ForbiddenException("Cannot register on lessons outside your campus");
         }
         if (!lesson.getWorkoutType().getAllowedHealthGroups().contains(student.getHealthGroup())) {
-            throw new BadRequestException("This workout type is not allowed for your health group");
+            throw new BadRequestException("Workout type is not allowed for current health group");
         }
         if (sheetRepository.existsByLessonIdAndStudentId(lessonId, student.getId())) {
-            throw new ConflictException("You are already registered on this lesson");
+            throw new ConflictException("Already registered on this lesson");
         }
         if (sheetRepository.countByLessonId(lessonId) >= lesson.getTotalPlaces()) {
-            throw new ConflictException("No free places on this lesson");
+            throw new ConflictException("Lesson has no available places");
         }
         if (sheetRepository.hasTimeOverlap(student.getId(), lesson.getStartTime(), lesson.getEndTime())) {
-            throw new ConflictException("You have another lesson at this time");
+            throw new ConflictException("Another lesson is already scheduled at this time");
         }
 
         Sheet sheet = new Sheet();

@@ -1,7 +1,7 @@
 package ru.hse.sportclassbookingbackend.config;
 
 import jakarta.validation.MessageInterpolator;
-import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
+import org.hibernate.validator.messageinterpolation.ResourceBundleMessageInterpolator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
@@ -15,7 +15,7 @@ public class ValidationConfig {
     public LocalValidatorFactoryBean validator() {
         LocalValidatorFactoryBean validatorFactoryBean = new LocalValidatorFactoryBean();
         validatorFactoryBean.setMessageInterpolator(new EnglishMessageInterpolator(
-                new ParameterMessageInterpolator()
+                new ResourceBundleMessageInterpolator()
         ));
         return validatorFactoryBean;
     }
