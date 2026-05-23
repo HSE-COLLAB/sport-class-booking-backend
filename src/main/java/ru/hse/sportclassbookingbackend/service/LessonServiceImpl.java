@@ -16,6 +16,7 @@ import ru.hse.sportclassbookingbackend.dto.lesson.RecurringLessonRequest;
 import ru.hse.sportclassbookingbackend.dto.lesson.RecurringLessonResponse;
 import ru.hse.sportclassbookingbackend.exception.BadRequestException;
 import ru.hse.sportclassbookingbackend.exception.ConflictException;
+import ru.hse.sportclassbookingbackend.exception.ForbiddenException;
 import ru.hse.sportclassbookingbackend.exception.NotFoundException;
 import ru.hse.sportclassbookingbackend.mapper.LessonMapper;
 import ru.hse.sportclassbookingbackend.model.Campus;
@@ -87,7 +88,7 @@ public class LessonServiceImpl implements LessonService {
         Integer healthGroupId = null;
         if (Boolean.TRUE.equals(myHealthGroup)) {
             if (principal.getRole() != Role.STUDENT) {
-                throw new BadRequestException("myHealthGroup filter is only available for students");
+                throw new ForbiddenException("Filter 'myHealthGroup' is only available to students");
             }
             Student student = findStudentOrThrow(principal.getId());
             healthGroupId = student.getHealthGroup().getId();
@@ -181,18 +182,18 @@ public class LessonServiceImpl implements LessonService {
             if (principal.getRole() == Role.TEACHER) {
                 Teacher teacher = findTeacherOrThrow(principal.getId());
                 if (!newCampus.getId().equals(teacher.getCampus().getId())) {
-                    throw new BadRequestException("You can only work with lessons in your own campus");
+                    throw new ForbiddenException("Can only modify lessons in your own campus");
                 }
             }
             lesson.setCampus(newCampus);
         }
         if (request.teacherId() != null) {
             if (principal.getRole() == Role.TEACHER) {
-                throw new BadRequestException("Teacher cannot reassign lesson to another teacher");
+                throw new ForbiddenException("Cannot reassign lesson to another teacher");
             }
             Teacher newTeacher = findTeacherOrThrow(request.teacherId());
             if (!newTeacher.getCampus().getId().equals(lesson.getCampus().getId())) {
-                throw new BadRequestException("Teacher must belong to the same campus as lesson");
+                throw new BadRequestException("Teacher must belong to the same campus as the lesson");
             }
             lesson.setTeacher(newTeacher);
         }
@@ -233,7 +234,7 @@ public class LessonServiceImpl implements LessonService {
             throw new ConflictException("Lesson is already cancelled");
         }
         if (!lesson.getEndTime().isAfter(OffsetDateTime.now())) {
-            throw new BadRequestException("Cannot cancel a lesson that has already ended");
+            throw new ConflictException("Cannot cancel a lesson that has already ended");
         }
 
         lesson.setStatus(LessonStatus.CANCELLED);
@@ -243,11 +244,11 @@ public class LessonServiceImpl implements LessonService {
     private Teacher resolveTeacher(UUID teacherIdFromRequest, Campus campus, UserPrincipal principal) {
         if (principal.getRole() == Role.TEACHER) {
             if (teacherIdFromRequest != null && !teacherIdFromRequest.equals(principal.getId())) {
-                throw new BadRequestException("Teacher cannot assign lesson to another teacher");
+                throw new ForbiddenException("Cannot assign lesson to another teacher");
             }
             Teacher teacher = findTeacherOrThrow(principal.getId());
             if (!teacher.getCampus().getId().equals(campus.getId())) {
-                throw new BadRequestException("You can only create lessons in your own campus");
+                throw new ForbiddenException("Can only create lessons in your own campus");
             }
             return teacher;
         }
@@ -256,7 +257,7 @@ public class LessonServiceImpl implements LessonService {
         }
         Teacher teacher = findTeacherOrThrow(teacherIdFromRequest);
         if (!teacher.getCampus().getId().equals(campus.getId())) {
-            throw new BadRequestException("Teacher must belong to the same campus as lesson");
+            throw new BadRequestException("Teacher must belong to the same campus as the lesson");
         }
         return teacher;
     }
@@ -267,11 +268,11 @@ public class LessonServiceImpl implements LessonService {
         }
         if (principal.getRole() == Role.TEACHER) {
             if (!lesson.getTeacher().getId().equals(principal.getId())) {
-                throw new BadRequestException("You can only modify your own lessons");
+                throw new ForbiddenException("Cannot modify another teacher's lesson");
             }
             return;
         }
-        throw new BadRequestException("Access denied");
+        throw new ForbiddenException("Access denied");
     }
 
     private void validateRecurringRequest(RecurringLessonRequest request) {
@@ -358,22 +359,22 @@ public class LessonServiceImpl implements LessonService {
 
     private WorkoutType findActiveWorkoutTypeOrThrow(UUID id) {
         return workoutTypeRepository.findByIdAndIsActiveTrue(id)
-                .orElseThrow(() -> new BadRequestException("Active workout type with id: " + id + " was not found"));
+                .orElseThrow(() -> new NotFoundException("Active workout type with id: " + id + " was not found"));
     }
 
     private Teacher findTeacherOrThrow(UUID id) {
         return teacherRepository.findById(id)
-                .orElseThrow(() -> new BadRequestException("Teacher with id: " + id + " was not found"));
+                .orElseThrow(() -> new NotFoundException("Teacher with id: " + id + " was not found"));
     }
 
     private Student findStudentOrThrow(UUID id) {
         return studentRepository.findById(id)
-                .orElseThrow(() -> new BadRequestException("Student with id: " + id + " was not found"));
+                .orElseThrow(() -> new NotFoundException("Student with id: " + id + " was not found"));
     }
 
     private Campus findCampusOrThrow(Integer id) {
         return campusRepository.findById(id)
-                .orElseThrow(() -> new BadRequestException("Campus with id: " + id + " was not found"));
+                .orElseThrow(() -> new NotFoundException("Campus with id: " + id + " was not found"));
     }
 
     private Sort resolveSort(Collection<LessonTimeStatus> statuses) {
