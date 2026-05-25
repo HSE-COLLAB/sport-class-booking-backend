@@ -261,9 +261,23 @@ public class LessonServiceImpl implements LessonService {
         Collection<String> statusStrings = effectiveStatuses.stream().map(Enum::name).toList();
 
         Sort sort = resolveSort(effectiveStatuses);
-        Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
+
 
         if (principal.getRole() == Role.STUDENT) {
+            Sort adjustedSort = Sort.by(
+                    sort.stream()
+                            .map(order -> new Sort.Order(
+                                    order.getDirection(),
+                                    "lesson." + order.getProperty()
+                            ))
+                            .toList()
+            );
+
+            Pageable sortedPageable = PageRequest.of(
+                    pageable.getPageNumber(),
+                    pageable.getPageSize(),
+                    adjustedSort
+            );
             Student student = findStudentOrThrow(principal.getId());
             ZoneId zoneId = ZoneId.of(student.getCampus().getTimezone());
 
@@ -280,6 +294,7 @@ public class LessonServiceImpl implements LessonService {
                 throw new BadRequestException("Parameter 'visited' is only available for STUDENT role");
             }
 
+            Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
             Teacher teacher = findTeacherOrThrow(principal.getId());
             ZoneId zoneId = ZoneId.of(teacher.getCampus().getTimezone());
 
