@@ -29,6 +29,7 @@ import ru.hse.sportclassbookingbackend.repository.SheetRepository;
 import ru.hse.sportclassbookingbackend.repository.StudentRepository;
 import ru.hse.sportclassbookingbackend.security.UserPrincipal;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -47,6 +48,7 @@ public class SheetServiceImpl implements SheetService {
     private final StudentRepository studentRepository;
     private final SheetMapper sheetMapper;
     private final LessonMapper lessonMapper;
+    private final Clock clock;
 
     @Override
     @Transactional
@@ -58,7 +60,7 @@ public class SheetServiceImpl implements SheetService {
         if (lesson.getStatus() == LessonStatus.CANCELLED) {
             throw new ConflictException("Cannot register on a cancelled lesson");
         }
-        if (!lesson.getStartTime().isAfter(OffsetDateTime.now())) {
+        if (!lesson.getStartTime().isAfter(OffsetDateTime.now(clock))) {
             throw new BadRequestException("Cannot register on a lesson that has already started");
         }
         if (!student.getCampus().getId().equals(lesson.getCampus().getId())) {
@@ -97,7 +99,7 @@ public class SheetServiceImpl implements SheetService {
         if (sheet.getLesson().getStatus() == LessonStatus.CANCELLED) {
             throw new ConflictException("Cannot cancel registration on a cancelled lesson");
         }
-        if (!sheet.getLesson().getStartTime().isAfter(OffsetDateTime.now())) {
+        if (!sheet.getLesson().getStartTime().isAfter(OffsetDateTime.now(clock))) {
             throw new BadRequestException("Cannot cancel registration after the lesson has started");
         }
 
@@ -126,7 +128,7 @@ public class SheetServiceImpl implements SheetService {
         if (lesson.getStatus() == LessonStatus.CANCELLED) {
             throw new ConflictException("Cannot mark attendance on a cancelled lesson");
         }
-        if (lesson.getStartTime().isAfter(OffsetDateTime.now())) {
+        if (lesson.getStartTime().isAfter(OffsetDateTime.now(clock))) {
             throw new BadRequestException("Cannot mark attendance before the lesson starts");
         }
 
@@ -174,7 +176,7 @@ public class SheetServiceImpl implements SheetService {
         OffsetDateTime toUtc = to != null ? to.atZone(zoneId).toOffsetDateTime() : null;
 
         return sheetRepository.findAllMyLessons(
-                student.getId(), fromUtc, toUtc, visited, statusStrings, OffsetDateTime.now(), sortedPageable
+                student.getId(), fromUtc, toUtc, visited, statusStrings, OffsetDateTime.now(clock), sortedPageable
         ).map(this::toMyLessonResponse);
     }
 

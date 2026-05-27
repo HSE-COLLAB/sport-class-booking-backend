@@ -33,6 +33,7 @@ import ru.hse.sportclassbookingbackend.repository.TeacherRepository;
 import ru.hse.sportclassbookingbackend.repository.WorkoutTypeRepository;
 import ru.hse.sportclassbookingbackend.security.UserPrincipal;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -56,6 +57,7 @@ public class LessonServiceImpl implements LessonService {
     private final StudentRepository studentRepository;
     private final SheetRepository sheetRepository;
     private final LessonMapper lessonMapper;
+    private final Clock clock;
 
     @Override
     @Transactional(readOnly = true)
@@ -96,7 +98,7 @@ public class LessonServiceImpl implements LessonService {
 
         return lessonRepository.findAllWithFilters(
                 campusId, effectiveWorkoutTypeIds, teacherId, fromUtc, toUtc, place, healthGroupId,
-                statusStrings, Boolean.TRUE.equals(includeCancelled), OffsetDateTime.now(), sortedPageable
+                statusStrings, Boolean.TRUE.equals(includeCancelled), OffsetDateTime.now(clock), sortedPageable
         ).map(this::toResponse);
     }
 
@@ -233,7 +235,7 @@ public class LessonServiceImpl implements LessonService {
         if (lesson.getStatus() == LessonStatus.CANCELLED) {
             throw new ConflictException("Lesson is already cancelled");
         }
-        if (!lesson.getEndTime().isAfter(OffsetDateTime.now())) {
+        if (!lesson.getEndTime().isAfter(OffsetDateTime.now(clock))) {
             throw new ConflictException("Cannot cancel a lesson that has already ended");
         }
 
@@ -299,7 +301,7 @@ public class LessonServiceImpl implements LessonService {
                 OffsetDateTime startDateTime = current.atTime(request.startTime()).atOffset(offset);
                 OffsetDateTime endDateTime = current.atTime(request.endTime()).atOffset(offset);
 
-                if (startDateTime.isAfter(OffsetDateTime.now())) {
+                if (startDateTime.isAfter(OffsetDateTime.now(clock))) {
                     Lesson lesson = lessonMapper.toEntityFromRecurring(request, startDateTime, endDateTime);
                     lesson.setTeacher(teacher);
                     lesson.setCampus(campus);
