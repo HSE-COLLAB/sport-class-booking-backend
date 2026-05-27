@@ -1,0 +1,11 @@
+security:
+  jwt:
+    secret: ${JWT_SECRET:very-very-secret-key-min-256-bytes-required}
+    expiration: ${JWT_EXPIRATION_MILLIS:1800000}
+  refresh:
+    expiration: ${REFRESH_EXPIRATION_MILLIS:2629746000}
+  bcrypt:
+    rounds: ${BCRYPT_ROUNDS:4}
+  development:
+    default-user:
+      enabled: false
