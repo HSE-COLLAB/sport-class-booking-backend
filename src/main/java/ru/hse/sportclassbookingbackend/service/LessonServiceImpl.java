@@ -14,6 +14,7 @@ import ru.hse.sportclassbookingbackend.dto.lesson.LessonStatus;
 import ru.hse.sportclassbookingbackend.dto.lesson.LessonTimeStatus;
 import ru.hse.sportclassbookingbackend.dto.lesson.RecurringLessonRequest;
 import ru.hse.sportclassbookingbackend.dto.lesson.RecurringLessonResponse;
+import ru.hse.sportclassbookingbackend.dto.sheet.MyLessonResponse;
 import ru.hse.sportclassbookingbackend.exception.BadRequestException;
 import ru.hse.sportclassbookingbackend.exception.ConflictException;
 import ru.hse.sportclassbookingbackend.exception.ForbiddenException;
@@ -22,6 +23,7 @@ import ru.hse.sportclassbookingbackend.mapper.LessonMapper;
 import ru.hse.sportclassbookingbackend.model.Campus;
 import ru.hse.sportclassbookingbackend.model.Lesson;
 import ru.hse.sportclassbookingbackend.model.Role;
+import ru.hse.sportclassbookingbackend.model.Sheet;
 import ru.hse.sportclassbookingbackend.model.Student;
 import ru.hse.sportclassbookingbackend.model.Teacher;
 import ru.hse.sportclassbookingbackend.model.WorkoutType;
@@ -73,7 +75,7 @@ public class LessonServiceImpl implements LessonService {
 
         Collection<LessonTimeStatus> effectiveStatuses = timeStatuses;
         if (effectiveStatuses == null || effectiveStatuses.isEmpty()) {
-            effectiveStatuses = List.of(LessonTimeStatus.UPCOMING, LessonTimeStatus.ONGOING);
+            effectiveStatuses = List.of(LessonTimeStatus.UPCOMING, LessonTimeStatus.ONGOING, LessonTimeStatus.PAST);
         }
         Collection<String> statusStrings = effectiveStatuses.stream().map(Enum::name).toList();
 
@@ -98,7 +100,7 @@ public class LessonServiceImpl implements LessonService {
 
         return lessonRepository.findAllWithFilters(
                 campusId, effectiveWorkoutTypeIds, teacherId, fromUtc, toUtc, place, healthGroupId,
-                statusStrings, Boolean.TRUE.equals(includeCancelled), OffsetDateTime.now(clock), sortedPageable
+                statusStrings, !Boolean.FALSE.equals(includeCancelled), OffsetDateTime.now(clock), sortedPageable
         ).map(this::toResponse);
     }
 
@@ -243,6 +245,76 @@ public class LessonServiceImpl implements LessonService {
         return toResponse(lessonRepository.save(lesson));
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Page<MyLessonResponse> getMyLessons(Collection<LessonTimeStatus> timeStatuses, Boolean visited,
+                                               LocalDateTime from, LocalDateTime to, Pageable pageable,
+                                               UserPrincipal principal) {
+        if (from != null && to != null && !to.isAfter(from)) {
+            throw new BadRequestException("'to' must be after 'from'");
+        }
+
+        Collection<LessonTimeStatus> effectiveStatuses = timeStatuses;
+        if (effectiveStatuses == null || effectiveStatuses.isEmpty()) {
+            effectiveStatuses = List.of(LessonTimeStatus.UPCOMING, LessonTimeStatus.ONGOING, LessonTimeStatus.PAST);
+        }
+        Collection<String> statusStrings = effectiveStatuses.stream().map(Enum::name).toList();
+
+        Sort sort = resolveSort(effectiveStatuses);
+
+
+        if (principal.getRole() == Role.STUDENT) {
+            Sort adjustedSort = Sort.by(
+                    sort.stream()
+                            .map(order -> new Sort.Order(
+                                    order.getDirection(),
+                                    "lesson." + order.getProperty()
+                            ))
+                            .toList()
+            );
+
+            Pageable sortedPageable = PageRequest.of(
+                    pageable.getPageNumber(),
+                    pageable.getPageSize(),
+                    adjustedSort
+            );
+            Student student = findStudentOrThrow(principal.getId());
+            ZoneId zoneId = ZoneId.of(student.getCampus().getTimezone());
+
+
+            OffsetDateTime fromUtc = from != null ? from.atZone(zoneId).toOffsetDateTime() : null;
+            OffsetDateTime toUtc = to != null ? to.atZone(zoneId).toOffsetDateTime() : null;
+
+            return sheetRepository.findAllMyLessons(
+                    student.getId(), fromUtc, toUtc, visited, statusStrings, OffsetDateTime.now(), sortedPageable
+            ).map(this::toMyLessonResponse);
+        }
+        else {
+            if (visited != null) {
+                throw new BadRequestException("Parameter 'visited' is only available for STUDENT role");
+            }
+
+            Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
+            Teacher teacher = findTeacherOrThrow(principal.getId());
+            ZoneId zoneId = ZoneId.of(teacher.getCampus().getTimezone());
+
+            OffsetDateTime fromUtc = from != null ? from.atZone(zoneId).toOffsetDateTime() : null;
+            OffsetDateTime toUtc = to != null ? to.atZone(zoneId).toOffsetDateTime() : null;
+
+            return lessonRepository.findTeacherLessons(
+                            teacher.getId(),
+                            fromUtc,
+                            toUtc,
+                            statusStrings,
+                            OffsetDateTime.now(),
+                            sortedPageable
+                    ).map(this::toMyLessonResponseFromLesson);
+        }
+    }
+
+
+
+
     private Teacher resolveTeacher(UUID teacherIdFromRequest, Campus campus, UserPrincipal principal) {
         if (principal.getRole() == Role.TEACHER) {
             if (teacherIdFromRequest != null && !teacherIdFromRequest.equals(principal.getId())) {
@@ -351,6 +423,51 @@ public class LessonServiceImpl implements LessonService {
                 lessonMapper.toWorkoutTypeResponse(lesson.getWorkoutType()),
                 lessonMapper.toTeacherShortResponse(lesson.getTeacher()),
                 lessonMapper.toCampusResponse(lesson.getCampus())
+        );
+    }
+
+    private MyLessonResponse toMyLessonResponse(Sheet sheet) {
+        Lesson lesson = sheet.getLesson();
+        int taken = (int) sheetRepository.countByLessonId(lesson.getId());
+        int available = Math.max(0, lesson.getTotalPlaces() - taken);
+        ZoneId zoneId = ZoneId.of(lesson.getCampus().getTimezone());
+
+        return new MyLessonResponse(
+                lesson.getId(),
+                lesson.getTitle(),
+                lesson.getPlace(),
+                lesson.getStartTime().atZoneSameInstant(zoneId).toOffsetDateTime(),
+                lesson.getEndTime().atZoneSameInstant(zoneId).toOffsetDateTime(),
+                lesson.getTotalPlaces(),
+                available,
+                lesson.getStatus(),
+                lesson.getNotes(),
+                lessonMapper.toWorkoutTypeResponse(lesson.getWorkoutType()),
+                lessonMapper.toTeacherShortResponse(lesson.getTeacher()),
+                lessonMapper.toCampusResponse(lesson.getCampus()),
+                new MyLessonResponse.MySheetInfo(sheet.getId(), sheet.getVisited())
+        );
+    }
+
+    private MyLessonResponse toMyLessonResponseFromLesson(Lesson lesson) {
+        int taken = (int) sheetRepository.countByLessonId(lesson.getId());
+        int available = Math.max(0, lesson.getTotalPlaces() - taken);
+        ZoneId zoneId = ZoneId.of(lesson.getCampus().getTimezone());
+
+        return new MyLessonResponse(
+                lesson.getId(),
+                lesson.getTitle(),
+                lesson.getPlace(),
+                lesson.getStartTime().atZoneSameInstant(zoneId).toOffsetDateTime(),
+                lesson.getEndTime().atZoneSameInstant(zoneId).toOffsetDateTime(),
+                lesson.getTotalPlaces(),
+                available,
+                lesson.getStatus(),
+                lesson.getNotes(),
+                lessonMapper.toWorkoutTypeResponse(lesson.getWorkoutType()),
+                lessonMapper.toTeacherShortResponse(lesson.getTeacher()),
+                lessonMapper.toCampusResponse(lesson.getCampus()),
+                null
         );
     }
 

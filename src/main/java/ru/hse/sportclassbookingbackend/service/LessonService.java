@@ -8,6 +8,7 @@ import ru.hse.sportclassbookingbackend.dto.lesson.LessonResponse;
 import ru.hse.sportclassbookingbackend.dto.lesson.LessonTimeStatus;
 import ru.hse.sportclassbookingbackend.dto.lesson.RecurringLessonRequest;
 import ru.hse.sportclassbookingbackend.dto.lesson.RecurringLessonResponse;
+import ru.hse.sportclassbookingbackend.dto.sheet.MyLessonResponse;
 import ru.hse.sportclassbookingbackend.security.UserPrincipal;
 
 import java.time.LocalDateTime;
@@ -30,4 +31,7 @@ public interface LessonService {
     LessonResponse update(UUID id, LessonPatchRequest request, UserPrincipal principal);
 
     LessonResponse cancel(UUID id, UserPrincipal principal);
+
+    Page<MyLessonResponse> getMyLessons(Collection<LessonTimeStatus> timeStatuses, Boolean visited, LocalDateTime from,
+                                        LocalDateTime to, Pageable pageable, UserPrincipal principal);
 }

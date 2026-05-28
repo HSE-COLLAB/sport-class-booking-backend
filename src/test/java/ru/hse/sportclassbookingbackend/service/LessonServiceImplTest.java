@@ -156,7 +156,7 @@ class LessonServiceImplTest {
             when(campusRepository.findById(CAMPUS_ID)).thenReturn(Optional.of(campus));
             when(lessonRepository.findAllWithFilters(
                     eq(CAMPUS_ID), eq(null), eq(null), eq(null), eq(null), eq(null), eq(null),
-                    anyCollection(), eq(false), any(OffsetDateTime.class), any(Pageable.class)
+                    anyCollection(), eq(true), any(OffsetDateTime.class), any(Pageable.class)
             )).thenReturn(lessonPage);
             when(sheetRepository.countByLessonId(LESSON_ID)).thenReturn(5L);
 

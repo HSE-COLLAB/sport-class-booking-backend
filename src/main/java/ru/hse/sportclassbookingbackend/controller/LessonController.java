@@ -52,7 +52,7 @@ public class LessonController {
 
     @Operation(
             summary = "Список занятий с фильтрами",
-            description = "Поиск по кампусу, типу тренировки, преподавателю, времени, месту, медгруппе студента. По умолчанию: только ACTIVE + статусы UPCOMING и ONGOING. Отсортировано по startTime ASC (кроме случая, когда запрошено только PAST — тогда DESC)."
+            description = "Поиск по кампусу, типу тренировки, преподавателю, времени, месту, медгруппе студента. По умолчанию: ACTIVE + CANCELLED, все временные статусы. Отсортировано по startTime ASC (кроме случая, когда запрошено только PAST — тогда DESC)."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Постраничный список"),
@@ -81,7 +81,7 @@ public class LessonController {
             @RequestParam(required = false) Boolean myHealthGroup,
             @Parameter(description = "Статусы по времени относительно now.")
             @RequestParam(required = false) List<LessonTimeStatus> status,
-            @Parameter(description = "Если true, включить в выдачу уроки со статусом CANCELLED. По умолчанию false.")
+            @Parameter(description = "Если false, исключить из выдачи уроки со статусом CANCELLED. По умолчанию true (включены).")
             @RequestParam(required = false) Boolean includeCancelled,
             @Parameter(description = "Номер страницы с 0.")
             @RequestParam(defaultValue = "0") int page,
@@ -98,7 +98,7 @@ public class LessonController {
 
     @Operation(
             summary = "Мои занятия (для студента)",
-            description = "Постраничный список занятий, на которые записан текущий студент. Каждый элемент содержит вложенное поле sheet с id записи и visited. По умолчанию только UPCOMING/ONGOING."
+            description = "Постраничный список занятий, на которые записан текущий студент или которые ведет преподаватель. Для STUDENT поле sheet всегда заполнено и содержит данные о записи; для TEACHER поле sheet всегда null. По умолчанию - все статусы."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Список моих занятий"),
@@ -110,9 +110,9 @@ public class LessonController {
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @GetMapping("/my")
-    @PreAuthorize("hasRole('STUDENT')")
+    @PreAuthorize("hasAnyRole('STUDENT', 'TEACHER')")
     public ResponseEntity<Page<MyLessonResponse>> getMy(
-            @Parameter(description = "Статусы по времени относительно now. По умолчанию — UPCOMING+ONGOING.")
+            @Parameter(description = "Статусы по времени относительно now. По умолчанию — все статусы.")
             @RequestParam(required = false) List<LessonTimeStatus> status,
             @Parameter(description = "Фильтр по посещению (для PAST). null — оба.")
             @RequestParam(required = false) Boolean visited,
@@ -124,7 +124,7 @@ public class LessonController {
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         return ResponseEntity.ok(
-                sheetService.getMyLessons(status, visited, from, to, PageRequest.of(page, size), principal)
+                lessonService.getMyLessons(status, visited, from, to, PageRequest.of(page, size), principal)
         );
     }
 
