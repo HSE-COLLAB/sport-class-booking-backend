@@ -52,7 +52,7 @@ public class LessonController {
 
     @Operation(
             summary = "Список занятий с фильтрами",
-            description = "Поиск по кампусу, типу тренировки, преподавателю, времени, месту, медгруппе студента. По умолчанию: только ACTIVE + все статусы. Отсортировано по startTime ASC (кроме случая, когда запрошено только PAST — тогда DESC)."
+            description = "Поиск по кампусу, типу тренировки, преподавателю, времени, месту, медгруппе студента. По умолчанию: ACTIVE + CANCELLED, все временные статусы. Отсортировано по startTime ASC (кроме случая, когда запрошено только PAST — тогда DESC)."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Постраничный список"),
@@ -81,7 +81,7 @@ public class LessonController {
             @RequestParam(required = false) Boolean myHealthGroup,
             @Parameter(description = "Статусы по времени относительно now.")
             @RequestParam(required = false) List<LessonTimeStatus> status,
-            @Parameter(description = "Если true, включить в выдачу уроки со статусом CANCELLED. По умолчанию false.")
+            @Parameter(description = "Если false, исключить из выдачи уроки со статусом CANCELLED. По умолчанию true (включены).")
             @RequestParam(required = false) Boolean includeCancelled,
             @Parameter(description = "Номер страницы с 0.")
             @RequestParam(defaultValue = "0") int page,

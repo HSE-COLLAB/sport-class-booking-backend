@@ -100,7 +100,7 @@ public class LessonServiceImpl implements LessonService {
 
         return lessonRepository.findAllWithFilters(
                 campusId, effectiveWorkoutTypeIds, teacherId, fromUtc, toUtc, place, healthGroupId,
-                statusStrings, Boolean.TRUE.equals(includeCancelled), OffsetDateTime.now(clock), sortedPageable
+                statusStrings, !Boolean.FALSE.equals(includeCancelled), OffsetDateTime.now(clock), sortedPageable
         ).map(this::toResponse);
     }
 
