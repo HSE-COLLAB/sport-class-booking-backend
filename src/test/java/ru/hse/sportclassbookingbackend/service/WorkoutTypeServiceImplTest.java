@@ -165,7 +165,7 @@ class WorkoutTypeServiceImplTest {
         }
 
         @Test
-        @DisplayName("Бросает BadRequestException если не все медгруппы найдены-ошибкаTest")
+        @DisplayName("Бросает NotFoundException если не все медгруппы найдены-ошибкаTest")
         void throwsBadRequestWhenSomeHealthGroupsMissingTest() {
             WorkoutTypeRequest request = new WorkoutTypeRequest(
                     NEW_TITLE, Set.of(HEALTH_GROUP_ID_1, UNKNOWN_HEALTH_GROUP_ID)
@@ -177,7 +177,7 @@ class WorkoutTypeServiceImplTest {
                     .thenReturn(List.of(healthGroup1));
 
             assertThatThrownBy(() -> workoutTypeService.create(request))
-                    .isInstanceOf(BadRequestException.class)
+                    .isInstanceOf(NotFoundException.class)
                     .hasMessageContaining("health group");
 
             verify(workoutTypeRepository, never()).save(any());
@@ -238,7 +238,7 @@ class WorkoutTypeServiceImplTest {
         }
 
         @Test
-        @DisplayName("Бросает BadRequestException если не все новые медгруппы найдены-ошибкаTest")
+        @DisplayName("Бросает NotFoundException если не все новые медгруппы найдены-ошибкаTest")
         void throwsBadRequestWhenSomeNewHealthGroupsMissingTest() {
             WorkoutTypePatchRequest request = new WorkoutTypePatchRequest(
                     null, Set.of(HEALTH_GROUP_ID_1, UNKNOWN_HEALTH_GROUP_ID)
@@ -250,7 +250,7 @@ class WorkoutTypeServiceImplTest {
                     .thenReturn(List.of(healthGroup1));
 
             assertThatThrownBy(() -> workoutTypeService.update(WORKOUT_TYPE_ID, request))
-                    .isInstanceOf(BadRequestException.class)
+                    .isInstanceOf(NotFoundException.class)
                     .hasMessageContaining("health group");
 
             verify(workoutTypeRepository, never()).save(any());

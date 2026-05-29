@@ -12,6 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.SessionCallback;
+import org.springframework.data.redis.core.SetOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 import ru.hse.sportclassbookingbackend.model.Role;
@@ -44,6 +45,7 @@ class RefreshTokenServiceTest {
     @Mock private StringRedisTemplate redisTemplate;
     @Mock private RedisOperations<Object, Object> redisOperations;
     @Mock private HashOperations<Object, Object, Object> hashOperations;
+    @Mock private SetOperations<Object, Object> setOperations;
     @Mock private HashOperations<String, Object, Object> templateHashOperations;
 
     @InjectMocks private RefreshTokenService refreshTokenService;
@@ -64,6 +66,7 @@ class RefreshTokenServiceTest {
         @SuppressWarnings({"unchecked", "rawtypes"})
         void createsRefreshTokenAndStoresInRedisSuccessTest() {
             when(redisOperations.opsForHash()).thenReturn(hashOperations);
+            when(redisOperations.opsForSet()).thenReturn(setOperations);
             when(redisTemplate.execute(any(SessionCallback.class))).thenAnswer(inv -> {
                 SessionCallback<Object> callback = inv.getArgument(0);
                 return callback.execute(redisOperations);
@@ -187,6 +190,9 @@ class RefreshTokenServiceTest {
         @Test
         @DisplayName("Удаляет ключ из Redis по refresh-токену-успехTest")
         void deletesKeyByRefreshTokenSuccessTest() {
+            when(redisTemplate.opsForHash()).thenReturn(templateHashOperations);
+            when(templateHashOperations.get(REFRESH_PREFIX + REFRESH_TOKEN, "userId")).thenReturn(null);
+
             refreshTokenService.delete(REFRESH_TOKEN);
 
             verify(redisTemplate).delete(REFRESH_PREFIX + REFRESH_TOKEN);

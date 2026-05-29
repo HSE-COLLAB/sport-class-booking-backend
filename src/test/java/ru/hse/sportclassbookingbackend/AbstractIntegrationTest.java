@@ -2,12 +2,18 @@ package ru.hse.sportclassbookingbackend;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.redis.testcontainers.RedisContainer;
+import jakarta.mail.Session;
+import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.MockReset;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.http.MediaType;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -29,7 +35,12 @@ import ru.hse.sportclassbookingbackend.repository.SheetRepository;
 import ru.hse.sportclassbookingbackend.repository.StudentGroupRepository;
 import ru.hse.sportclassbookingbackend.repository.UserRepository;
 import ru.hse.sportclassbookingbackend.repository.WorkoutTypeRepository;
+import ru.hse.sportclassbookingbackend.service.mail.EmailVerificationTokenService;
+import ru.hse.sportclassbookingbackend.service.mail.PasswordResetCodeService;
 
+import java.util.UUID;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -59,6 +70,8 @@ public abstract class AbstractIntegrationTest {
     @Autowired protected ObjectMapper objectMapper;
     @Autowired protected PasswordEncoder passwordEncoder;
 
+    @MockBean(reset = MockReset.NONE) protected JavaMailSender javaMailSender;
+
     @Autowired protected SheetRepository sheetRepository;
     @Autowired protected LessonRepository lessonRepository;
     @Autowired protected WorkoutTypeRepository workoutTypeRepository;
@@ -66,6 +79,9 @@ public abstract class AbstractIntegrationTest {
     @Autowired protected StudentGroupRepository studentGroupRepository;
     @Autowired protected CampusRepository campusRepository;
     @Autowired protected HealthGroupRepository healthGroupRepository;
+    @Autowired protected EmailVerificationTokenService emailVerificationTokenService;
+    @Autowired protected PasswordResetCodeService passwordResetCodeService;
+    @Autowired protected StringRedisTemplate redisTemplate;
 
     @BeforeEach
     void cleanBusinessData() {
@@ -76,6 +92,12 @@ public abstract class AbstractIntegrationTest {
         studentGroupRepository.deleteAll();
     }
 
+    @BeforeEach
+    void setupMailSenderMock() {
+        org.mockito.Mockito.when(javaMailSender.createMimeMessage())
+                .thenAnswer(inv -> new MimeMessage((Session) null));
+    }
+
     protected Student createStudent(String email, Campus campus, HealthGroup healthGroup, StudentGroup group) {
         Student student = new Student();
         student.setEmail(email);
@@ -84,6 +106,7 @@ public abstract class AbstractIntegrationTest {
         student.setLastName("Student");
         student.setMiddleName("Middle");
         student.setIsActive(true);
+        student.setEmailVerified(true);
         student.setRole(Role.STUDENT);
         student.setCampus(campus);
         student.setHealthGroup(healthGroup);
@@ -99,6 +122,7 @@ public abstract class AbstractIntegrationTest {
         teacher.setLastName("Teacher");
         teacher.setMiddleName("Middle");
         teacher.setIsActive(true);
+        teacher.setEmailVerified(true);
         teacher.setRole(Role.TEACHER);
         teacher.setPosition("Преподаватель");
         teacher.setCampus(campus);
@@ -113,6 +137,7 @@ public abstract class AbstractIntegrationTest {
         admin.setLastName("Admin");
         admin.setMiddleName("Middle");
         admin.setIsActive(true);
+        admin.setEmailVerified(true);
         admin.setRole(Role.ADMIN);
         return userRepository.save(admin);
     }
@@ -137,5 +162,18 @@ public abstract class AbstractIntegrationTest {
 
     protected String bearerHeader(String token) {
         return "Bearer " + token;
+    }
+
+    protected void verifyEmailFor(String email) throws Exception {
+        UUID userId = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalStateException("User with email " + email + " not found"))
+                .getId();
+        UUID token = emailVerificationTokenService.create(userId);
+        mockMvc.perform(get("/auth/verify-email").param("token", token.toString()))
+                .andExpect(status().isNoContent());
+    }
+
+    protected String readPasswordResetCode(String email) {
+        return redisTemplate.opsForValue().get("password-reset:" + email);
     }
 }

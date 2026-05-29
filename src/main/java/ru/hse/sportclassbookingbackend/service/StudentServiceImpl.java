@@ -1,8 +1,11 @@
 package ru.hse.sportclassbookingbackend.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import ru.hse.sportclassbookingbackend.event.HealthGroupChangedEvent;
 import ru.hse.sportclassbookingbackend.dto.student.StudentHealthGroupPatchRequest;
 import ru.hse.sportclassbookingbackend.dto.student.StudentResponse;
 import ru.hse.sportclassbookingbackend.dto.student.StudentPatchRequest;
@@ -30,6 +33,7 @@ public class StudentServiceImpl implements StudentService{
     private final StudentGroupRepository studentGroupRepository;
     private final HealthGroupRepository healthGroupRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public void delete(UUID id) {
@@ -65,6 +69,7 @@ public class StudentServiceImpl implements StudentService{
         return studentMapper.toResponse(studentRepository.save(student));
     }
 
+    @Transactional
     public StudentResponse updateHealthGroup(UUID id, StudentHealthGroupPatchRequest request) {
         Student student = studentRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Student with id: " + id + " was not found"));
@@ -72,8 +77,15 @@ public class StudentServiceImpl implements StudentService{
         HealthGroup healthGroup = healthGroupRepository.findById(request.healthGroupId())
                 .orElseThrow(() -> new NotFoundException("HealthGroup with id " + request.healthGroupId() + " not found"));
 
+        Integer oldGroupId = student.getHealthGroup() != null ? student.getHealthGroup().getId() : null;
         student.setHealthGroup(healthGroup);
-        return studentMapper.toResponse(studentRepository.save(student));
+        Student saved = studentRepository.save(student);
+
+        if (oldGroupId == null || !oldGroupId.equals(healthGroup.getId())) {
+            eventPublisher.publishEvent(new HealthGroupChangedEvent(saved.getId(), oldGroupId, healthGroup.getId()));
+        }
+
+        return studentMapper.toResponse(saved);
     }
 
     public StudentResponse getById(UUID id) {

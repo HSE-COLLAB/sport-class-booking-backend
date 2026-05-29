@@ -11,6 +11,7 @@ import ru.hse.sportclassbookingbackend.model.Role;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -22,12 +23,14 @@ public class RefreshTokenService {
     private Long refreshExpiration;
 
     private static final String REFRESH_PREFIX = "refresh:";
+    private static final String USER_REFRESH_PREFIX = "user-refresh:";
 
     private final StringRedisTemplate redisTemplate;
 
     public UUID create(UUID userId, Role role) {
         UUID token = UUID.randomUUID();
         String key = REFRESH_PREFIX + token;
+        String indexKey = USER_REFRESH_PREFIX + userId;
         Map<String, String> fields = new HashMap<>();
         fields.put("userId", userId.toString());
         fields.put("role", role.name());
@@ -40,6 +43,8 @@ public class RefreshTokenService {
                 try {
                     ops.opsForHash().putAll(key, fields);
                     ops.expire(key, refreshExpiration, TimeUnit.MILLISECONDS);
+                    ops.opsForSet().add(indexKey, token.toString());
+                    ops.expire(indexKey, refreshExpiration, TimeUnit.MILLISECONDS);
                     return ops.exec();
                 } catch (Exception ex) {
                     ops.discard();
@@ -67,7 +72,22 @@ public class RefreshTokenService {
 
     public void delete(UUID refreshToken) {
         String key = REFRESH_PREFIX + refreshToken;
+        String userIdStr = (String) redisTemplate.opsForHash().get(key, "userId");
         redisTemplate.delete(key);
+        if (userIdStr != null) {
+            redisTemplate.opsForSet().remove(USER_REFRESH_PREFIX + userIdStr, refreshToken.toString());
+        }
+    }
+
+    public void deleteAllForUser(UUID userId) {
+        String indexKey = USER_REFRESH_PREFIX + userId;
+        Set<String> tokens = redisTemplate.opsForSet().members(indexKey);
+        if (tokens != null && !tokens.isEmpty()) {
+            for (String token : tokens) {
+                redisTemplate.delete(REFRESH_PREFIX + token);
+            }
+        }
+        redisTemplate.delete(indexKey);
     }
 
     public record RefreshTokenData(

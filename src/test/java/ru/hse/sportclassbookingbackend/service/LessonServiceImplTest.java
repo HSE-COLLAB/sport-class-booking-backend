@@ -23,6 +23,7 @@ import ru.hse.sportclassbookingbackend.dto.lesson.RecurringLessonRequest;
 import ru.hse.sportclassbookingbackend.dto.lesson.RecurringLessonResponse;
 import ru.hse.sportclassbookingbackend.exception.BadRequestException;
 import ru.hse.sportclassbookingbackend.exception.ConflictException;
+import ru.hse.sportclassbookingbackend.exception.ForbiddenException;
 import ru.hse.sportclassbookingbackend.exception.NotFoundException;
 import ru.hse.sportclassbookingbackend.mapper.LessonMapper;
 import ru.hse.sportclassbookingbackend.model.Campus;
@@ -95,6 +96,7 @@ class LessonServiceImplTest {
     @Mock private StudentRepository studentRepository;
     @Mock private SheetRepository sheetRepository;
     @Mock private LessonMapper lessonMapper;
+    @Mock private org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     @Spy private Clock clock = Clock.fixed(FROZEN_NOW, ZoneOffset.UTC);
 
@@ -181,14 +183,14 @@ class LessonServiceImplTest {
         }
 
         @Test
-        @DisplayName("Бросает BadRequestException если myHealthGroup=true и роль не STUDENT-ошибкаTest")
+        @DisplayName("Бросает ForbiddenException если myHealthGroup=true и роль не STUDENT-ошибкаTest")
         void throwsBadRequestWhenMyHealthGroupForNonStudentTest() {
             when(campusRepository.findById(CAMPUS_ID)).thenReturn(Optional.of(campus));
             Pageable pageable = PageRequest.of(PAGE_NUMBER, PAGE_SIZE);
 
             assertThatThrownBy(() -> lessonService.getAll(
                     CAMPUS_ID, null, null, null, null, null, true, null, null, pageable, adminPrincipal
-            )).isInstanceOf(BadRequestException.class).hasMessageContaining("only available for students");
+            )).isInstanceOf(ForbiddenException.class).hasMessageContaining("only available to students");
         }
 
         @Test
@@ -320,25 +322,25 @@ class LessonServiceImplTest {
         }
 
         @Test
-        @DisplayName("Бросает BadRequestException если кампуса нет-ошибкаTest")
+        @DisplayName("Бросает NotFoundException если кампуса нет-ошибкаTest")
         void throwsBadRequestWhenCampusMissingTest() {
             LessonRequest request = lessonRequest(TEACHER_ID);
             when(campusRepository.findById(CAMPUS_ID)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> lessonService.create(request, adminPrincipal))
-                    .isInstanceOf(BadRequestException.class)
+                    .isInstanceOf(NotFoundException.class)
                     .hasMessageContaining("Campus with id");
         }
 
         @Test
-        @DisplayName("Бросает BadRequestException если workout type не активен-ошибкаTest")
+        @DisplayName("Бросает NotFoundException если workout type не активен-ошибкаTest")
         void throwsBadRequestWhenWorkoutTypeInactiveTest() {
             LessonRequest request = lessonRequest(TEACHER_ID);
             when(campusRepository.findById(CAMPUS_ID)).thenReturn(Optional.of(campus));
             when(workoutTypeRepository.findByIdAndIsActiveTrue(WORKOUT_TYPE_ID)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> lessonService.create(request, adminPrincipal))
-                    .isInstanceOf(BadRequestException.class)
+                    .isInstanceOf(NotFoundException.class)
                     .hasMessageContaining("Active workout type");
         }
 
@@ -355,19 +357,19 @@ class LessonServiceImplTest {
         }
 
         @Test
-        @DisplayName("Бросает BadRequestException если препод указал чужой teacherId-ошибкаTest")
+        @DisplayName("Бросает ForbiddenException если препод указал чужой teacherId-ошибкаTest")
         void throwsBadRequestWhenTeacherUsesAnotherTeacherIdTest() {
             LessonRequest request = lessonRequest(OTHER_TEACHER_ID);
             when(campusRepository.findById(CAMPUS_ID)).thenReturn(Optional.of(campus));
             when(workoutTypeRepository.findByIdAndIsActiveTrue(WORKOUT_TYPE_ID)).thenReturn(Optional.of(workoutType));
 
             assertThatThrownBy(() -> lessonService.create(request, teacherPrincipal))
-                    .isInstanceOf(BadRequestException.class)
-                    .hasMessageContaining("Teacher cannot assign lesson to another teacher");
+                    .isInstanceOf(ForbiddenException.class)
+                    .hasMessageContaining("another teacher");
         }
 
         @Test
-        @DisplayName("Бросает BadRequestException если препод создаёт занятие в чужом кампусе-ошибкаTest")
+        @DisplayName("Бросает ForbiddenException если препод создаёт занятие в чужом кампусе-ошибкаTest")
         void throwsBadRequestWhenTeacherInWrongCampusTest() {
             Campus otherCampus = new Campus();
             otherCampus.setId(OTHER_CAMPUS_ID);
@@ -380,7 +382,7 @@ class LessonServiceImplTest {
             when(teacherRepository.findById(TEACHER_ID)).thenReturn(Optional.of(teacher));
 
             assertThatThrownBy(() -> lessonService.create(request, teacherPrincipal))
-                    .isInstanceOf(BadRequestException.class)
+                    .isInstanceOf(ForbiddenException.class)
                     .hasMessageContaining("your own campus");
         }
 
@@ -566,7 +568,7 @@ class LessonServiceImplTest {
         }
 
         @Test
-        @DisplayName("Бросает BadRequestException если препод редактирует чужое занятие-ошибкаTest")
+        @DisplayName("Бросает ForbiddenException если препод редактирует чужое занятие-ошибкаTest")
         void throwsBadRequestWhenTeacherEditsAnotherTeachersLessonTest() {
             lesson.setTeacher(otherTeacher);
             when(lessonRepository.findById(LESSON_ID)).thenReturn(Optional.of(lesson));
@@ -576,12 +578,12 @@ class LessonServiceImplTest {
             );
 
             assertThatThrownBy(() -> lessonService.update(LESSON_ID, request, teacherPrincipal))
-                    .isInstanceOf(BadRequestException.class)
-                    .hasMessageContaining("your own lessons");
+                    .isInstanceOf(ForbiddenException.class)
+                    .hasMessageContaining("another teacher");
         }
 
         @Test
-        @DisplayName("Бросает BadRequestException если update от студента-ошибкаTest")
+        @DisplayName("Бросает ForbiddenException если update от студента-ошибкаTest")
         void throwsBadRequestWhenStudentUpdatesTest() {
             when(lessonRepository.findById(LESSON_ID)).thenReturn(Optional.of(lesson));
 
@@ -590,7 +592,7 @@ class LessonServiceImplTest {
             );
 
             assertThatThrownBy(() -> lessonService.update(LESSON_ID, request, studentPrincipal))
-                    .isInstanceOf(BadRequestException.class)
+                    .isInstanceOf(ForbiddenException.class)
                     .hasMessageContaining("Access denied");
         }
 
@@ -616,7 +618,7 @@ class LessonServiceImplTest {
         }
 
         @Test
-        @DisplayName("Бросает BadRequestException если препод меняет кампус на чужой-ошибкаTest")
+        @DisplayName("Бросает ForbiddenException если препод меняет кампус на чужой-ошибкаTest")
         void throwsBadRequestWhenTeacherChangesToAnotherCampusTest() {
             Campus anotherCampus = new Campus();
             anotherCampus.setId(OTHER_CAMPUS_ID);
@@ -631,12 +633,12 @@ class LessonServiceImplTest {
             when(teacherRepository.findById(TEACHER_ID)).thenReturn(Optional.of(teacher));
 
             assertThatThrownBy(() -> lessonService.update(LESSON_ID, request, teacherPrincipal))
-                    .isInstanceOf(BadRequestException.class)
+                    .isInstanceOf(ForbiddenException.class)
                     .hasMessageContaining("your own campus");
         }
 
         @Test
-        @DisplayName("Бросает BadRequestException если препод пытается переназначить препода-ошибкаTest")
+        @DisplayName("Бросает ForbiddenException если препод пытается переназначить препода-ошибкаTest")
         void throwsBadRequestWhenTeacherReassignsTeacherTest() {
             LessonPatchRequest request = new LessonPatchRequest(
                     null, null, null, null, null, null, null, OTHER_TEACHER_ID, null
@@ -645,8 +647,8 @@ class LessonServiceImplTest {
             when(lessonRepository.findById(LESSON_ID)).thenReturn(Optional.of(lesson));
 
             assertThatThrownBy(() -> lessonService.update(LESSON_ID, request, teacherPrincipal))
-                    .isInstanceOf(BadRequestException.class)
-                    .hasMessageContaining("cannot reassign");
+                    .isInstanceOf(ForbiddenException.class)
+                    .hasMessageContaining("reassign");
         }
 
         @Test
@@ -758,14 +760,13 @@ class LessonServiceImplTest {
         }
 
         @Test
-        @DisplayName("Бросает BadRequestException при отмене уже закончившегося занятия-ошибкаTest")
+        @DisplayName("Бросает ConflictException при отмене уже закончившегося занятия-ошибкаTest")
         void throwsBadRequestWhenCancellingPastLessonTest() {
-            // endTime ровно за секунду до FROZEN_NOW
             lesson.setEndTime(OffsetDateTime.ofInstant(FROZEN_NOW.minusSeconds(1), ZoneOffset.UTC));
             when(lessonRepository.findById(LESSON_ID)).thenReturn(Optional.of(lesson));
 
             assertThatThrownBy(() -> lessonService.cancel(LESSON_ID, adminPrincipal))
-                    .isInstanceOf(BadRequestException.class)
+                    .isInstanceOf(ConflictException.class)
                     .hasMessageContaining("already ended");
         }
 
@@ -776,8 +777,8 @@ class LessonServiceImplTest {
             when(lessonRepository.findById(LESSON_ID)).thenReturn(Optional.of(lesson));
 
             assertThatThrownBy(() -> lessonService.cancel(LESSON_ID, teacherPrincipal))
-                    .isInstanceOf(BadRequestException.class)
-                    .hasMessageContaining("your own lessons");
+                    .isInstanceOf(ForbiddenException.class)
+                    .hasMessageContaining("another teacher");
 
             verify(lessonRepository, never()).save(any());
         }

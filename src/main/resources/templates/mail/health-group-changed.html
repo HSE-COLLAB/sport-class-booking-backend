@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Изменение медицинской группы</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.5; color: #222; max-width: 560px; margin: 0 auto; padding: 24px;">
+
+<h2 style="margin-top: 0;">Здравствуйте<span th:if="${firstName}" th:text="', ' + ${firstName}">, имя</span>!</h2>
+
+<p>Ваша медицинская группа в системе была обновлена:</p>
+
+<div style="background: #f0fdf4; border-left: 4px solid #2ea043; padding: 16px 20px; margin: 24px 0; border-radius: 4px;">
+    <p style="margin: 0 0 8px 0; font-size: 16px;">
+        <span style="text-decoration: line-through; color: #999;" th:text="${oldGroup}">прошлая группа</span>
+        →
+        <span style="font-weight: 600; color: #1a7f37;" th:text="${newGroup}">новая группа</span>
+    </p>
+</div>
+
+<p>
+    Теперь вы можете записываться на следующие типы тренировок:
+</p>
+
+<ul style="background: #f6f8fa; padding: 16px 32px; border-radius: 4px;">
+    <li th:each="workoutType : ${allowedWorkoutTypes}" th:text="${workoutType}" style="margin: 4px 0;">Тип тренировки</li>
+    <li th:if="${#lists.isEmpty(allowedWorkoutTypes)}" style="color: #999;">
+        Пока что нет доступных типов тренировок для этой группы.
+    </li>
+</ul>
+
+<p style="font-size: 13px; color: #555;">
+    Полный список занятий и доступных мест можно увидеть в системе.
+</p>
+
+<hr style="border: none; border-top: 1px solid #eee; margin: 32px 0;">
+
+<p style="font-size: 12px; color: #888;">
+    Это автоматическое письмо от системы записи на спортивные занятия НИУ ВШЭ.
+</p>
+
+</body>
+</html>

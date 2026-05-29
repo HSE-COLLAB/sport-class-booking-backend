@@ -19,6 +19,7 @@ public interface TeacherMapper {
     @Mapping(target = "role", ignore = true)
     @Mapping(target = "campus", ignore = true)
     @Mapping(target = "isActive", constant = "true")
+    @Mapping(target = "emailVerified", constant = "false")
     Teacher toEntity(RegisterTeacherRequest req);
 
     @Mapping(target = "email", source = "email")

@@ -27,3 +27,22 @@ management:
   endpoint:
     health:
       show-details: never
+
+mail:
+  verification:
+    subject: "Подтверждение email — Спорт ВШЭ"
+    expiration: 86400000
+  reset:
+    subject: "Сброс пароля — Спорт ВШЭ"
+    expiration: 600000
+    max-attempts: 5
+  sheet-created:
+    subject: "Вы записаны на занятие — Спорт ВШЭ"
+  sheet-cancelled:
+    subject: "Ваша запись на занятие отменена — Спорт ВШЭ"
+  lesson-changed:
+    subject: "Изменения в занятии — Спорт ВШЭ"
+  lesson-cancelled:
+    subject: "Занятие отменено — Спорт ВШЭ"
+  health-group-changed:
+    subject: "Изменение медицинской группы — Спорт ВШЭ"

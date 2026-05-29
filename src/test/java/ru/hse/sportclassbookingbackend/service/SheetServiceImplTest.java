@@ -23,6 +23,7 @@ import ru.hse.sportclassbookingbackend.dto.sheet.MyLessonResponse;
 import ru.hse.sportclassbookingbackend.dto.sheet.SheetIdResponse;
 import ru.hse.sportclassbookingbackend.exception.BadRequestException;
 import ru.hse.sportclassbookingbackend.exception.ConflictException;
+import ru.hse.sportclassbookingbackend.exception.ForbiddenException;
 import ru.hse.sportclassbookingbackend.exception.NotFoundException;
 import ru.hse.sportclassbookingbackend.mapper.LessonMapper;
 import ru.hse.sportclassbookingbackend.mapper.SheetMapper;
@@ -94,6 +95,7 @@ class SheetServiceImplTest {
     @Mock private StudentRepository studentRepository;
     @Mock private SheetMapper sheetMapper;
     @Mock private LessonMapper lessonMapper;
+    @Mock private org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     @Spy private Clock clock = Clock.fixed(FROZEN_NOW, ZoneOffset.UTC);
 
@@ -223,7 +225,7 @@ class SheetServiceImplTest {
         }
 
         @Test
-        @DisplayName("Бросает BadRequestException если занятие в чужом кампусе-ошибкаTest")
+        @DisplayName("Бросает ForbiddenException если занятие в чужом кампусе-ошибкаTest")
         void throwsBadRequestWhenLessonInAnotherCampusTest() {
             Campus otherCampus = new Campus();
             otherCampus.setId(OTHER_CAMPUS_ID);
@@ -234,8 +236,8 @@ class SheetServiceImplTest {
             when(studentRepository.findById(STUDENT_ID)).thenReturn(Optional.of(student));
 
             assertThatThrownBy(() -> sheetService.register(LESSON_ID, studentPrincipal))
-                    .isInstanceOf(BadRequestException.class)
-                    .hasMessageContaining("your campus");
+                    .isInstanceOf(ForbiddenException.class)
+                    .hasMessageContaining("outside your campus");
         }
 
         @Test
@@ -247,7 +249,7 @@ class SheetServiceImplTest {
 
             assertThatThrownBy(() -> sheetService.register(LESSON_ID, studentPrincipal))
                     .isInstanceOf(BadRequestException.class)
-                    .hasMessageContaining("not allowed for your health group");
+                    .hasMessageContaining("not allowed for current health group");
         }
 
         @Test
@@ -259,7 +261,7 @@ class SheetServiceImplTest {
 
             assertThatThrownBy(() -> sheetService.register(LESSON_ID, studentPrincipal))
                     .isInstanceOf(ConflictException.class)
-                    .hasMessageContaining("already registered");
+                    .hasMessageContaining("Already registered");
         }
 
         @Test
@@ -272,7 +274,7 @@ class SheetServiceImplTest {
 
             assertThatThrownBy(() -> sheetService.register(LESSON_ID, studentPrincipal))
                     .isInstanceOf(ConflictException.class)
-                    .hasMessageContaining("No free places");
+                    .hasMessageContaining("no available places");
         }
 
         @Test
@@ -286,7 +288,7 @@ class SheetServiceImplTest {
 
             assertThatThrownBy(() -> sheetService.register(LESSON_ID, studentPrincipal))
                     .isInstanceOf(ConflictException.class)
-                    .hasMessageContaining("another lesson at this time");
+                    .hasMessageContaining("Another lesson is already scheduled");
         }
     }
 
@@ -370,25 +372,25 @@ class SheetServiceImplTest {
         }
 
         @Test
-        @DisplayName("Бросает BadRequestException если студент отменяет чужую запись-ошибкаTest")
+        @DisplayName("Бросает ForbiddenException если студент отменяет чужую запись-ошибкаTest")
         void throwsBadRequestWhenStudentCancelsAnothersRegistrationTest() {
             when(sheetRepository.findById(SHEET_ID)).thenReturn(Optional.of(sheet));
 
             assertThatThrownBy(() -> sheetService.cancel(LESSON_ID, SHEET_ID, otherStudentPrincipal))
-                    .isInstanceOf(BadRequestException.class)
-                    .hasMessageContaining("your own registration");
+                    .isInstanceOf(ForbiddenException.class)
+                    .hasMessageContaining("another student");
 
             verify(sheetRepository, never()).delete(any());
         }
 
         @Test
-        @DisplayName("Бросает BadRequestException если препод отменяет запись на чужое занятие-ошибкаTest")
+        @DisplayName("Бросает ForbiddenException если препод отменяет запись на чужое занятие-ошибкаTest")
         void throwsBadRequestWhenTeacherCancelsOnAnothersLessonTest() {
             when(sheetRepository.findById(SHEET_ID)).thenReturn(Optional.of(sheet));
 
             assertThatThrownBy(() -> sheetService.cancel(LESSON_ID, SHEET_ID, otherTeacherPrincipal))
-                    .isInstanceOf(BadRequestException.class)
-                    .hasMessageContaining("your own lessons");
+                    .isInstanceOf(ForbiddenException.class)
+                    .hasMessageContaining("another teacher");
 
             verify(sheetRepository, never()).delete(any());
         }
@@ -478,7 +480,7 @@ class SheetServiceImplTest {
         }
 
         @Test
-        @DisplayName("Бросает BadRequestException если препод проставляет на чужое занятие-ошибкаTest")
+        @DisplayName("Бросает ForbiddenException если препод проставляет на чужое занятие-ошибкаTest")
         void throwsBadRequestWhenTeacherMarksOnAnothersLessonTest() {
             lesson.setStartTime(START_OFFSET_PAST);
             BulkAttendanceRequest request = new BulkAttendanceRequest(List.of(
@@ -488,8 +490,8 @@ class SheetServiceImplTest {
             when(lessonRepository.findById(LESSON_ID)).thenReturn(Optional.of(lesson));
 
             assertThatThrownBy(() -> sheetService.markAttendance(LESSON_ID, request, otherTeacherPrincipal))
-                    .isInstanceOf(BadRequestException.class)
-                    .hasMessageContaining("your own lessons");
+                    .isInstanceOf(ForbiddenException.class)
+                    .hasMessageContaining("another teacher");
         }
 
         @Test
@@ -543,73 +545,7 @@ class SheetServiceImplTest {
         }
     }
 
-    // ───── getMyLessons ─────
-
-    @Nested
-    @DisplayName("getMyLessons")
-    class GetMyLessons {
-
-        @Test
-        @DisplayName("Возвращает страницу моих занятий-успехTest")
-        void returnsMyLessonsPageSuccessTest() {
-            Pageable pageable = PageRequest.of(PAGE_NUMBER, PAGE_SIZE);
-            when(studentRepository.findById(STUDENT_ID)).thenReturn(Optional.of(student));
-            when(sheetRepository.findAllMyLessons(
-                    eq(STUDENT_ID), eq(null), eq(null), eq(null),
-                    anyCollection(), any(OffsetDateTime.class), any(Pageable.class)
-            )).thenReturn(new PageImpl<>(List.of(sheet)));
-            when(sheetRepository.countByLessonId(LESSON_ID)).thenReturn(2L);
-
-            Page<MyLessonResponse> result = sheetService.getMyLessons(
-                    null, null, null, null, pageable, studentPrincipal
-            );
-
-            assertThat(result.getContent()).hasSize(1);
-        }
-
-        @Test
-        @DisplayName("Бросает BadRequestException если 'to' не позже 'from'-ошибкаTest")
-        void throwsBadRequestWhenToNotAfterFromTest() {
-            when(studentRepository.findById(STUDENT_ID)).thenReturn(Optional.of(student));
-            Pageable pageable = PageRequest.of(PAGE_NUMBER, PAGE_SIZE);
-            LocalDateTime from = LocalDateTime.of(2099, 6, 1, 12, 0);
-            LocalDateTime to = LocalDateTime.of(2099, 6, 1, 10, 0);
-
-            assertThatThrownBy(() -> sheetService.getMyLessons(null, null, from, to, pageable, studentPrincipal))
-                    .isInstanceOf(BadRequestException.class)
-                    .hasMessageContaining("'to' must be after 'from'");
-        }
-
-        @Test
-        @DisplayName("Сортирует по убыванию lesson.startTime если запрошены только PAST-успехTest")
-        void sortsDescWhenOnlyPastStatusTest() {
-            Pageable pageable = PageRequest.of(PAGE_NUMBER, PAGE_SIZE);
-            when(studentRepository.findById(STUDENT_ID)).thenReturn(Optional.of(student));
-            when(sheetRepository.findAllMyLessons(
-                    any(), any(), any(), any(),
-                    anyCollection(), any(OffsetDateTime.class), any(Pageable.class)
-            )).thenReturn(new PageImpl<>(List.of()));
-
-            sheetService.getMyLessons(
-                    List.of(LessonTimeStatus.PAST), null, null, null, pageable, studentPrincipal
-            );
-
-            verify(sheetRepository).findAllMyLessons(
-                    any(), any(), any(), any(),
-                    anyCollection(), any(OffsetDateTime.class),
-                    argThat((Pageable p) -> p.getSort().equals(Sort.by(Sort.Direction.DESC, "lesson.startTime")))
-            );
-        }
-
-        @Test
-        @DisplayName("Бросает BadRequestException если студент не найден-ошибкаTest")
-        void throwsBadRequestWhenStudentMissingTest() {
-            when(studentRepository.findById(STUDENT_ID)).thenReturn(Optional.empty());
-            Pageable pageable = PageRequest.of(PAGE_NUMBER, PAGE_SIZE);
-
-            assertThatThrownBy(() -> sheetService.getMyLessons(null, null, null, null, pageable, studentPrincipal))
-                    .isInstanceOf(BadRequestException.class)
-                    .hasMessageContaining("Student with id");
-        }
-    }
+    // Тесты getMyLessons удалены: метод переехал с SheetService на LessonService
+    // в коммите develop "feat: get my lessons for teachers". Соответствующие тесты
+    // относятся теперь к LessonServiceImplTest.
 }
