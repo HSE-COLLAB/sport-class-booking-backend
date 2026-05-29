@@ -30,6 +30,7 @@ public interface StudentMapper {
     @Mapping(target = "healthGroup", ignore = true)
     @Mapping(target = "campus", ignore = true)
     @Mapping(target = "isActive", constant = "true")
+    @Mapping(target = "emailVerified", constant = "false")
     Student toEntity(RegisterStudentRequest request);
 
 

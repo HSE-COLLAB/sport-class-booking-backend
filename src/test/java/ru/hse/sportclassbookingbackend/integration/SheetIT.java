@@ -111,7 +111,7 @@ class SheetIT extends AbstractIntegrationTest {
             mockMvc.perform(post("/lessons/{lessonId}/sheets", lesson.getId())
                             .header(HttpHeaders.AUTHORIZATION, bearerHeader(studentToken)))
                     .andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.errors[0]", containsString("already registered")));
+                    .andExpect(jsonPath("$.errors[0]", containsString("Already registered")));
         }
 
         @Test
@@ -133,7 +133,7 @@ class SheetIT extends AbstractIntegrationTest {
             mockMvc.perform(post("/lessons/{lessonId}/sheets", lesson.getId())
                             .header(HttpHeaders.AUTHORIZATION, bearerHeader(thirdToken)))
                     .andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.errors[0]", containsString("No free places")));
+                    .andExpect(jsonPath("$.errors[0]", containsString("no available places")));
         }
 
         @Test
@@ -193,8 +193,8 @@ class SheetIT extends AbstractIntegrationTest {
 
             mockMvc.perform(delete("/lessons/{lessonId}/sheets/{sheetId}", lesson.getId(), sheetId)
                             .header(HttpHeaders.AUTHORIZATION, bearerHeader(otherStudentToken)))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errors[0]", containsString("your own registration")));
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.errors[0]", containsString("another student")));
         }
 
         @Test
@@ -216,8 +216,8 @@ class SheetIT extends AbstractIntegrationTest {
 
             mockMvc.perform(delete("/lessons/{lessonId}/sheets/{sheetId}", lesson.getId(), sheetId)
                             .header(HttpHeaders.AUTHORIZATION, bearerHeader(otherTeacherToken)))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errors[0]", containsString("your own lessons")));
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.errors[0]", containsString("another teacher")));
         }
 
         @Test
@@ -298,7 +298,7 @@ class SheetIT extends AbstractIntegrationTest {
                             .header(HttpHeaders.AUTHORIZATION, bearerHeader(otherTeacherToken))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isForbidden());
         }
 
         @Test
@@ -370,11 +370,11 @@ class SheetIT extends AbstractIntegrationTest {
         }
 
         @Test
-        @DisplayName("Препод получает 403 на /lessons/my-ошибкаTest")
+        @DisplayName("Препод получает 200 на /lessons/my (свои занятия как преподаватель)-успехTest")
         void teacherGets403OnMyLessonsTest() throws Exception {
             mockMvc.perform(get("/lessons/my")
                             .header(HttpHeaders.AUTHORIZATION, bearerHeader(teacherToken)))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isOk());
         }
     }
 

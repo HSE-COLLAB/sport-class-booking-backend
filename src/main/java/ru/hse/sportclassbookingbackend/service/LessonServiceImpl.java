@@ -1,12 +1,16 @@
 package ru.hse.sportclassbookingbackend.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.hse.sportclassbookingbackend.event.LessonCancelledEvent;
+import ru.hse.sportclassbookingbackend.event.LessonChangedEvent;
+import ru.hse.sportclassbookingbackend.service.mail.LessonInfo;
 import ru.hse.sportclassbookingbackend.dto.lesson.LessonPatchRequest;
 import ru.hse.sportclassbookingbackend.dto.lesson.LessonRequest;
 import ru.hse.sportclassbookingbackend.dto.lesson.LessonResponse;
@@ -60,6 +64,7 @@ public class LessonServiceImpl implements LessonService {
     private final SheetRepository sheetRepository;
     private final LessonMapper lessonMapper;
     private final Clock clock;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -176,6 +181,8 @@ public class LessonServiceImpl implements LessonService {
             throw new ConflictException("Cannot edit cancelled lesson");
         }
 
+        LessonInfo before = toLessonInfo(lesson);
+
         lessonMapper.updateFromPatch(request, lesson);
 
         if (request.workoutTypeId() != null) {
@@ -225,7 +232,12 @@ public class LessonServiceImpl implements LessonService {
             }
         }
 
-        return toResponse(lessonRepository.save(lesson));
+        Lesson saved = lessonRepository.save(lesson);
+        LessonInfo after = toLessonInfo(saved);
+        if (hasRelevantChange(before, after)) {
+            eventPublisher.publishEvent(new LessonChangedEvent(saved.getId(), before, after));
+        }
+        return toResponse(saved);
     }
 
     @Override
@@ -241,8 +253,11 @@ public class LessonServiceImpl implements LessonService {
             throw new ConflictException("Cannot cancel a lesson that has already ended");
         }
 
+        LessonInfo snapshot = toLessonInfo(lesson);
         lesson.setStatus(LessonStatus.CANCELLED);
-        return toResponse(lessonRepository.save(lesson));
+        Lesson saved = lessonRepository.save(lesson);
+        eventPublisher.publishEvent(new LessonCancelledEvent(saved.getId(), snapshot));
+        return toResponse(saved);
     }
 
     @Override
@@ -502,5 +517,32 @@ public class LessonServiceImpl implements LessonService {
             return Sort.by(Sort.Direction.DESC, "startTime");
         }
         return Sort.by(Sort.Direction.ASC, "startTime");
+    }
+
+    private LessonInfo toLessonInfo(Lesson lesson) {
+        return new LessonInfo(
+                lesson.getTitle(),
+                lesson.getStartTime(),
+                lesson.getEndTime(),
+                lesson.getPlace(),
+                lesson.getCampus().getName(),
+                fullName(lesson.getTeacher()),
+                ZoneId.of(lesson.getCampus().getTimezone())
+        );
+    }
+
+    private String fullName(Teacher teacher) {
+        StringBuilder sb = new StringBuilder();
+        if (teacher.getLastName() != null) sb.append(teacher.getLastName()).append(' ');
+        if (teacher.getFirstName() != null) sb.append(teacher.getFirstName()).append(' ');
+        if (teacher.getMiddleName() != null) sb.append(teacher.getMiddleName());
+        return sb.toString().trim();
+    }
+
+    private boolean hasRelevantChange(LessonInfo before, LessonInfo after) {
+        return !java.util.Objects.equals(before.title(), after.title())
+                || !before.startTime().isEqual(after.startTime())
+                || !before.endTime().isEqual(after.endTime())
+                || !java.util.Objects.equals(before.place(), after.place());
     }
 }

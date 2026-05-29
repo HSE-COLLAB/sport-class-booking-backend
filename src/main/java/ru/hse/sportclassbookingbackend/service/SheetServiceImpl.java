@@ -1,10 +1,13 @@
 package ru.hse.sportclassbookingbackend.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.hse.sportclassbookingbackend.dto.lesson.LessonStatus;
 import ru.hse.sportclassbookingbackend.dto.sheet.AttendanceMark;
+import ru.hse.sportclassbookingbackend.event.SheetCancelledByOtherEvent;
+import ru.hse.sportclassbookingbackend.event.SheetCreatedEvent;
 import ru.hse.sportclassbookingbackend.dto.sheet.AttendeeResponse;
 import ru.hse.sportclassbookingbackend.dto.sheet.BulkAttendanceRequest;
 import ru.hse.sportclassbookingbackend.dto.sheet.SheetIdResponse;
@@ -38,6 +41,7 @@ public class SheetServiceImpl implements SheetService {
     private final StudentRepository studentRepository;
     private final SheetMapper sheetMapper;
     private final Clock clock;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -72,8 +76,11 @@ public class SheetServiceImpl implements SheetService {
         sheet.setLesson(lesson);
         sheet.setStudent(student);
         sheet.setVisited(false);
+        Sheet saved = sheetRepository.save(sheet);
 
-        return new SheetIdResponse(sheetRepository.save(sheet).getId());
+        eventPublisher.publishEvent(new SheetCreatedEvent(saved.getId(), lesson.getId(), student.getId()));
+
+        return new SheetIdResponse(saved.getId());
     }
 
     @Override
@@ -94,7 +101,18 @@ public class SheetServiceImpl implements SheetService {
 
         checkCancelPermission(sheet, principal);
 
+        boolean cancelledByOther = !sheet.getStudent().getId().equals(principal.getId());
+
         sheetRepository.delete(sheet);
+
+        if (cancelledByOther) {
+            eventPublisher.publishEvent(new SheetCancelledByOtherEvent(
+                    sheet.getId(),
+                    sheet.getLesson().getId(),
+                    sheet.getStudent().getId(),
+                    principal.getId()
+            ));
+        }
     }
 
     @Override

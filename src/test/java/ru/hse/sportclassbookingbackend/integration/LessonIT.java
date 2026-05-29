@@ -127,7 +127,7 @@ class LessonIT extends AbstractIntegrationTest {
             mockMvc.perform(post("/lessons")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isForbidden()); // без токена Spring Security обычно отдаёт 403
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
@@ -139,7 +139,7 @@ class LessonIT extends AbstractIntegrationTest {
                             .header(HttpHeaders.AUTHORIZATION, bearerHeader(teacherToken))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isBadRequest())
+                    .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.errors[0]", containsString("another teacher")));
         }
 
@@ -262,7 +262,7 @@ class LessonIT extends AbstractIntegrationTest {
                             .header(HttpHeaders.AUTHORIZATION, bearerHeader(otherTeacherToken))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isForbidden());
         }
 
         @Test

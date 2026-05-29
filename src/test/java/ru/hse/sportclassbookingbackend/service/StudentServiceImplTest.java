@@ -55,6 +55,7 @@ class StudentServiceImplTest {
     @Mock private StudentGroupRepository studentGroupRepository;
     @Mock private HealthGroupRepository healthGroupRepository;
     @Mock private PasswordEncoder passwordEncoder;
+    @Mock private org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     @InjectMocks private StudentServiceImpl studentService;
 

@@ -23,11 +23,11 @@ class SecurityIT extends AbstractIntegrationTest {
     private static final String JWT_SECRET = "very-very-secret-key-min-256-bytes-required";
 
     @Test
-    @DisplayName("Защищённый эндпоинт без Authorization-заголовка возвращает 403-ошибкаTest")
+    @DisplayName("Защищённый эндпоинт без Authorization-заголовка возвращает 401-ошибкаTest")
     void protectedEndpointReturns403WithoutAuthHeaderTest() throws Exception {
         mockMvc.perform(get(PROTECTED_ENDPOINT)
                         .param("campusId", String.valueOf(ANY_CAMPUS_ID)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
