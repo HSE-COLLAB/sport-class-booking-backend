@@ -56,11 +56,13 @@ public class LessonController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Постраничный список"),
-            @ApiResponse(responseCode = "400", description = "Невалидные параметры (campusId не существует, to <= from, myHealthGroup=true но не-студент)",
+            @ApiResponse(responseCode = "400", description = "Невалидные параметры (to <= from)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "401", description = "Invalid or expired token",
+            @ApiResponse(responseCode = "401", description = "Invalid or expired token / отсутствует авторизация",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "403", description = "Отсутствует авторизация",
+            @ApiResponse(responseCode = "403", description = "myHealthGroup=true для не-студента",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "campusId не существует",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @GetMapping
@@ -97,16 +99,18 @@ public class LessonController {
     }
 
     @Operation(
-            summary = "Мои занятия (для студента)",
-            description = "Постраничный список занятий, на которые записан текущий студент или которые ведет преподаватель. Для STUDENT поле sheet всегда заполнено и содержит данные о записи; для TEACHER поле sheet всегда null. По умолчанию - все статусы."
+            summary = "Мои занятия (для студента или преподавателя)",
+            description = "Постраничный список занятий, на которые записан текущий студент или которые ведёт преподаватель. " +
+                    "Для STUDENT поле sheet всегда заполнено и содержит данные о записи (sheetId, visited); для TEACHER поле sheet всегда null. " +
+                    "Параметр visited доступен только STUDENT'у. По умолчанию — все временные статусы, отсортировано по startTime ASC (DESC если запрошено только PAST). Включает CANCELLED."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Список моих занятий"),
-            @ApiResponse(responseCode = "400", description = "Невалидные параметры (to <= from)",
+            @ApiResponse(responseCode = "400", description = "to <= from, либо visited передан не-студентом",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "401", description = "Invalid or expired token",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "403", description = "Нет роли STUDENT",
+            @ApiResponse(responseCode = "403", description = "Нет роли STUDENT/TEACHER",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @GetMapping("/my")
@@ -149,11 +153,13 @@ public class LessonController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Урок создан"),
-            @ApiResponse(responseCode = "400", description = "Невалидный payload / чужой кампус / teacherId не задан (admin) / teacher из другого кампуса / workoutType неактивен / endTime ≤ startTime",
+            @ApiResponse(responseCode = "400", description = "Невалидный payload / teacherId не задан (admin) / teacher из другого кампуса (для admin) / endTime ≤ startTime",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "401", description = "Invalid or expired token",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "403", description = "Нет роли TEACHER/ADMIN",
+            @ApiResponse(responseCode = "403", description = "Нет роли TEACHER/ADMIN, либо teacher создаёт урок в чужом кампусе / для другого преподавателя",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "campusId / workoutTypeId (или неактивный) / teacherId не найдены",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "409", description = "У преподавателя уже есть ACTIVE урок в это время",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
@@ -174,11 +180,13 @@ public class LessonController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Серия создана (возвращает count + firstDate/lastDate)"),
-            @ApiResponse(responseCode = "400", description = "endDate < startDate, диапазон > 365 дней, endTime ≤ startTime, пустой daysOfWeek, чужой кампус, workoutType не найден/неактивен, teacher не тот",
+            @ApiResponse(responseCode = "400", description = "endDate < startDate, диапазон > 365 дней, endTime ≤ startTime, пустой daysOfWeek, ни один урок не подошёл по датам",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "401", description = "Invalid or expired token",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "403", description = "Нет роли TEACHER/ADMIN",
+            @ApiResponse(responseCode = "403", description = "Нет роли TEACHER/ADMIN, либо teacher работает с чужим кампусом / другим преподавателем",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "campusId / workoutTypeId (или неактивный) / teacherId не найдены",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "409", description = "Хотя бы один из сгенерированных уроков пересекается с существующим у преподавателя",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
@@ -199,15 +207,15 @@ public class LessonController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Урок обновлён"),
-            @ApiResponse(responseCode = "400", description = "Teacher правит чужой урок / workoutType неактивен / campus недоступен / teacher из другого кампуса / endTime ≤ startTime",
+            @ApiResponse(responseCode = "400", description = "endTime ≤ startTime / новый teacher из другого кампуса (для admin)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "401", description = "Invalid or expired token",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "403", description = "Нет роли TEACHER/ADMIN",
+            @ApiResponse(responseCode = "403", description = "Нет роли TEACHER/ADMIN, либо teacher правит чужой урок / переназначает учителя / меняет кампус на чужой",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "404", description = "Урок не найден",
+            @ApiResponse(responseCode = "404", description = "Урок / workoutTypeId (или неактивный) / campusId / teacherId не найдены",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "409", description = "Урок CANCELLED (редактировать нельзя) ИЛИ конфликт по времени у преподавателя",
+            @ApiResponse(responseCode = "409", description = "Урок CANCELLED / конфликт по времени у преподавателя / totalPlaces меньше числа уже записанных",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @PatchMapping("/{id}")
@@ -227,15 +235,13 @@ public class LessonController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Урок отменён"),
-            @ApiResponse(responseCode = "400", description = "Урок уже прошёл (endTime <= now) ИЛИ teacher отменяет чужой",
-                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "401", description = "Invalid or expired token",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "403", description = "Нет роли TEACHER/ADMIN",
+            @ApiResponse(responseCode = "403", description = "Нет роли TEACHER/ADMIN, либо teacher отменяет чужой урок",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "404", description = "Урок не найден",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "409", description = "Урок уже отменён",
+            @ApiResponse(responseCode = "409", description = "Урок уже отменён ИЛИ уже прошёл (endTime <= now)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @PostMapping("/{id}/cancel")

@@ -66,6 +66,8 @@ public class StudentController {
             @ApiResponse(responseCode = "403", description = "Не ADMIN",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "404", description = "Студент не найден",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Новый email уже занят другим пользователем",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @PatchMapping("/{id}")
@@ -133,7 +135,9 @@ public class StudentController {
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "403", description = "id в пути не совпадает с authenticated user",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "404", description = "Студент не найден",
+            @ApiResponse(responseCode = "404", description = "Студент не найден (например, эндпоинт вызван teacher'ом для своего id)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Новый email уже занят другим пользователем",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @PatchMapping("/{id}/self-update")

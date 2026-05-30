@@ -44,6 +44,6 @@ security:
 
 logging:
   level:
-    root: WARN
+    root: INFO
     ru.hse.sportclassbookingbackend: DEBUG
     org.springframework.security: ERROR

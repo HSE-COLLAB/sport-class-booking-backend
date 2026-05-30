@@ -1,0 +1,403 @@
+{
+  "info": {
+    "name": "Sport Class Booking — Admin",
+    "description": "Сценарии для роли ADMIN.\n\nПредусловия:\n1. Запущен бекенд на http://localhost:8080/api (профиль local).\n2. Накатана миграция v1.0.7-test-data (seed-данные).\n\nЗапускать папки по порядку сверху вниз — каждая опирается на токены/id, сохранённые предыдущими.\n\nПароль всех seeded-юзеров: test1234.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {"key": "baseUrl", "value": "http://localhost:8080/api"},
+    {"key": "adminAccess", "value": ""},
+    {"key": "adminRefresh", "value": ""},
+    {"key": "adminId", "value": "99999999-9999-9999-9999-999999999999"},
+    {"key": "teacher1Id", "value": "33333333-3333-3333-3333-333333333331"},
+    {"key": "teacher2Id", "value": "33333333-3333-3333-3333-333333333332"},
+    {"key": "student1Id", "value": "55555555-5555-5555-5555-555555555551"},
+    {"key": "campusNN", "value": "3"},
+    {"key": "lessonUpcomingId", "value": "20000000-0000-0000-0000-000000000001"},
+    {"key": "createdGroupId", "value": ""},
+    {"key": "createdWorkoutTypeId", "value": ""},
+    {"key": "createdLessonId", "value": ""}
+  ],
+  "item": [
+    {
+      "name": "00 Setup — Login Admin",
+      "item": [
+        {
+          "name": "Login admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('accessToken present', () => pm.expect(j.accessToken).to.be.a('string'));",
+                  "pm.test('refreshToken present', () => pm.expect(j.refreshToken).to.be.a('string'));",
+                  "pm.collectionVariables.set('adminAccess', j.accessToken);",
+                  "pm.collectionVariables.set('adminRefresh', j.refreshToken);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@test.local\",\n  \"password\": \"test1234\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 Smoke — read-only списки",
+      "item": [
+        {
+          "name": "List students",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('200', () => pm.response.to.have.status(200));", "pm.test('array', () => pm.expect(pm.response.json()).to.be.an('array'));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccess}}"}],
+            "url": {"raw": "{{baseUrl}}/students", "host": ["{{baseUrl}}"], "path": ["students"]}
+          }
+        },
+        {
+          "name": "List teachers",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('200', () => pm.response.to.have.status(200));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccess}}"}],
+            "url": {"raw": "{{baseUrl}}/teachers", "host": ["{{baseUrl}}"], "path": ["teachers"]}
+          }
+        },
+        {
+          "name": "List student groups",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('200', () => pm.response.to.have.status(200));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccess}}"}],
+            "url": {"raw": "{{baseUrl}}/student-groups", "host": ["{{baseUrl}}"], "path": ["student-groups"]}
+          }
+        },
+        {
+          "name": "List workout types",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('200', () => pm.response.to.have.status(200));", "pm.test('seed contains Волейбол', () => pm.expect(pm.response.text()).to.include('Волейбол'));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccess}}"}],
+            "url": {"raw": "{{baseUrl}}/workout-types", "host": ["{{baseUrl}}"], "path": ["workout-types"]}
+          }
+        },
+        {
+          "name": "List health groups",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('200', () => pm.response.to.have.status(200));", "pm.test('5 health groups', () => pm.expect(pm.response.json()).to.have.lengthOf(5));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccess}}"}],
+            "url": {"raw": "{{baseUrl}}/health-groups", "host": ["{{baseUrl}}"], "path": ["health-groups"]}
+          }
+        },
+        {
+          "name": "Get UPCOMING lesson by id",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('200', () => pm.response.to.have.status(200));", "const j = pm.response.json();", "pm.test('status ACTIVE', () => pm.expect(j.status).to.eql('ACTIVE'));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccess}}"}],
+            "url": {"raw": "{{baseUrl}}/lessons/{{lessonUpcomingId}}", "host": ["{{baseUrl}}"], "path": ["lessons", "{{lessonUpcomingId}}"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 CRUD student groups",
+      "item": [
+        {
+          "name": "Create student group",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('201', () => pm.response.to.have.status(201));", "const j = pm.response.json();", "pm.collectionVariables.set('createdGroupId', j.id);"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccess}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/student-groups", "host": ["{{baseUrl}}"], "path": ["student-groups"]},
+            "body": {"mode": "raw", "raw": "{\n  \"faculty\": \"ФКН\",\n  \"academicMajor\": \"Тестовая программа\",\n  \"groupNumber\": \"TST-001\"\n}"}
+          }
+        },
+        {
+          "name": "Update student group",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('200', () => pm.response.to.have.status(200));", "pm.test('groupNumber updated', () => pm.expect(pm.response.json().groupNumber).to.eql('TST-001-RENAMED'));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccess}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/student-groups/{{createdGroupId}}", "host": ["{{baseUrl}}"], "path": ["student-groups", "{{createdGroupId}}"]},
+            "body": {"mode": "raw", "raw": "{\n  \"groupNumber\": \"TST-001-RENAMED\"\n}"}
+          }
+        },
+        {
+          "name": "Delete student group",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('204', () => pm.response.to.have.status(204));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "DELETE",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccess}}"}],
+            "url": {"raw": "{{baseUrl}}/student-groups/{{createdGroupId}}", "host": ["{{baseUrl}}"], "path": ["student-groups", "{{createdGroupId}}"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 CRUD workout types",
+      "item": [
+        {
+          "name": "Create workout type",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('201', () => pm.response.to.have.status(201));", "pm.collectionVariables.set('createdWorkoutTypeId', pm.response.json().id);"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccess}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/workout-types", "host": ["{{baseUrl}}"], "path": ["workout-types"]},
+            "body": {"mode": "raw", "raw": "{\n  \"title\": \"Тестовый тип\",\n  \"allowedHealthGroupIds\": [1, 2]\n}"}
+          }
+        },
+        {
+          "name": "Update workout type",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('200', () => pm.response.to.have.status(200));", "pm.test('title updated', () => pm.expect(pm.response.json().title).to.eql('Тестовый обновлённый'));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccess}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/workout-types/{{createdWorkoutTypeId}}", "host": ["{{baseUrl}}"], "path": ["workout-types", "{{createdWorkoutTypeId}}"]},
+            "body": {"mode": "raw", "raw": "{\n  \"title\": \"Тестовый обновлённый\"\n}"}
+          }
+        },
+        {
+          "name": "Delete workout type (soft, deactivate)",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('204', () => pm.response.to.have.status(204));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "DELETE",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccess}}"}],
+            "url": {"raw": "{{baseUrl}}/workout-types/{{createdWorkoutTypeId}}", "host": ["{{baseUrl}}"], "path": ["workout-types", "{{createdWorkoutTypeId}}"]}
+          }
+        },
+        {
+          "name": "Get deactivated workout type → 404",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('404 (already deactivated)', () => pm.response.to.have.status(404));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccess}}"}],
+            "url": {"raw": "{{baseUrl}}/workout-types/{{createdWorkoutTypeId}}", "host": ["{{baseUrl}}"], "path": ["workout-types", "{{createdWorkoutTypeId}}"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Admin actions on users",
+      "item": [
+        {
+          "name": "Get student by id",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('200', () => pm.response.to.have.status(200));", "pm.test('role STUDENT', () => pm.expect(pm.response.json().role).to.eql('STUDENT'));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccess}}"}],
+            "url": {"raw": "{{baseUrl}}/students/{{student1Id}}", "host": ["{{baseUrl}}"], "path": ["students", "{{student1Id}}"]}
+          }
+        },
+        {
+          "name": "Patch student (rename)",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('200', () => pm.response.to.have.status(200));", "pm.test('firstName updated', () => pm.expect(pm.response.json().firstName).to.eql('Алексей-Updated'));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccess}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/students/{{student1Id}}", "host": ["{{baseUrl}}"], "path": ["students", "{{student1Id}}"]},
+            "body": {"mode": "raw", "raw": "{\n  \"firstName\": \"Алексей-Updated\"\n}"}
+          }
+        },
+        {
+          "name": "Patch student health group (admin)",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('200', () => pm.response.to.have.status(200));", "pm.test('healthGroupId=2', () => pm.expect(pm.response.json().healthGroupId).to.eql(2));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccess}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/students/{{student1Id}}/health-group", "host": ["{{baseUrl}}"], "path": ["students", "{{student1Id}}", "health-group"]},
+            "body": {"mode": "raw", "raw": "{\n  \"healthGroupId\": 2\n}"}
+          }
+        },
+        {
+          "name": "Revert student rename and health group",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('200', () => pm.response.to.have.status(200));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccess}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/students/{{student1Id}}", "host": ["{{baseUrl}}"], "path": ["students", "{{student1Id}}"]},
+            "body": {"mode": "raw", "raw": "{\n  \"firstName\": \"Алексей\",\n  \"healthGroupId\": 1\n}"}
+          }
+        },
+        {
+          "name": "Update health group description",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('200', () => pm.response.to.have.status(200));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccess}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/health-groups/5", "host": ["{{baseUrl}}"], "path": ["health-groups", "5"]},
+            "body": {"mode": "raw", "raw": "{\n  \"description\": \"Нет данных (обновлено admin)\"\n}"}
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Lessons (admin creates with explicit teacher)",
+      "item": [
+        {
+          "name": "Create lesson (admin, teacher1)",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('201', () => pm.response.to.have.status(201));", "pm.collectionVariables.set('createdLessonId', pm.response.json().id);"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccess}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/lessons", "host": ["{{baseUrl}}"], "path": ["lessons"]},
+            "body": {"mode": "raw", "raw": "{\n  \"title\": \"Админ создал волейбол\",\n  \"place\": \"Зал 3\",\n  \"startTime\": \"2099-11-01T10:00:00\",\n  \"endTime\": \"2099-11-01T11:30:00\",\n  \"totalPlaces\": 20,\n  \"workoutTypeId\": \"10000000-0000-0000-0000-000000000001\",\n  \"campusId\": 3,\n  \"teacherId\": \"{{teacher1Id}}\"\n}"}
+          }
+        },
+        {
+          "name": "Update created lesson",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('200', () => pm.response.to.have.status(200));", "pm.test('place updated', () => pm.expect(pm.response.json().place).to.eql('Зал 4'));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccess}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/lessons/{{createdLessonId}}", "host": ["{{baseUrl}}"], "path": ["lessons", "{{createdLessonId}}"]},
+            "body": {"mode": "raw", "raw": "{\n  \"place\": \"Зал 4\"\n}"}
+          }
+        },
+        {
+          "name": "Cancel created lesson",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('200', () => pm.response.to.have.status(200));", "pm.test('status CANCELLED', () => pm.expect(pm.response.json().status).to.eql('CANCELLED'));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccess}}"}],
+            "url": {"raw": "{{baseUrl}}/lessons/{{createdLessonId}}/cancel", "host": ["{{baseUrl}}"], "path": ["lessons", "{{createdLessonId}}", "cancel"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Refresh / Logout",
+      "item": [
+        {
+          "name": "Refresh access token",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('200', () => pm.response.to.have.status(200));", "const j = pm.response.json();", "pm.collectionVariables.set('adminAccess', j.accessToken);"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "X-Refresh-Token", "value": "{{adminRefresh}}"}],
+            "url": {"raw": "{{baseUrl}}/auth/refresh", "host": ["{{baseUrl}}"], "path": ["auth", "refresh"]}
+          }
+        },
+        {
+          "name": "Logout",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('204', () => pm.response.to.have.status(204));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "X-Refresh-Token", "value": "{{adminRefresh}}"}],
+            "url": {"raw": "{{baseUrl}}/auth/logout", "host": ["{{baseUrl}}"], "path": ["auth", "logout"]}
+          }
+        },
+        {
+          "name": "Refresh after logout → 401",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('401', () => pm.response.to.have.status(401));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "X-Refresh-Token", "value": "{{adminRefresh}}"}],
+            "url": {"raw": "{{baseUrl}}/auth/refresh", "host": ["{{baseUrl}}"], "path": ["auth", "refresh"]}
+          }
+        },
+        {
+          "name": "Re-login admin (для дальнейших тестов error scenarios)",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('200', () => pm.response.to.have.status(200));", "const j = pm.response.json();", "pm.collectionVariables.set('adminAccess', j.accessToken);", "pm.collectionVariables.set('adminRefresh', j.refreshToken);"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"]},
+            "body": {"mode": "raw", "raw": "{\n  \"email\": \"admin@test.local\",\n  \"password\": \"test1234\"\n}"}
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 Error scenarios (admin perspective)",
+      "item": [
+        {
+          "name": "No token → 401",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('401', () => pm.response.to.have.status(401));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "GET",
+            "url": {"raw": "{{baseUrl}}/students", "host": ["{{baseUrl}}"], "path": ["students"]}
+          }
+        },
+        {
+          "name": "Wrong password → 401",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('401', () => pm.response.to.have.status(401));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"]},
+            "body": {"mode": "raw", "raw": "{\n  \"email\": \"admin@test.local\",\n  \"password\": \"wrong\"\n}"}
+          }
+        },
+        {
+          "name": "Unknown email login → 401",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('401', () => pm.response.to.have.status(401));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"]},
+            "body": {"mode": "raw", "raw": "{\n  \"email\": \"nobody@test.local\",\n  \"password\": \"test1234\"\n}"}
+          }
+        },
+        {
+          "name": "Get nonexistent lesson → 404",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('404', () => pm.response.to.have.status(404));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccess}}"}],
+            "url": {"raw": "{{baseUrl}}/lessons/00000000-0000-0000-0000-000000000000", "host": ["{{baseUrl}}"], "path": ["lessons", "00000000-0000-0000-0000-000000000000"]}
+          }
+        },
+        {
+          "name": "Create workout type with unknown healthGroupId → 404",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('404', () => pm.response.to.have.status(404));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccess}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/workout-types", "host": ["{{baseUrl}}"], "path": ["workout-types"]},
+            "body": {"mode": "raw", "raw": "{\n  \"title\": \"Bad type\",\n  \"allowedHealthGroupIds\": [999]\n}"}
+          }
+        },
+        {
+          "name": "Create workout type with empty title → 400",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('400', () => pm.response.to.have.status(400));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccess}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/workout-types", "host": ["{{baseUrl}}"], "path": ["workout-types"]},
+            "body": {"mode": "raw", "raw": "{\n  \"title\": \"\",\n  \"allowedHealthGroupIds\": [1]\n}"}
+          }
+        },
+        {
+          "name": "Cancel already-cancelled lesson → 409",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('409', () => pm.response.to.have.status(409));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccess}}"}],
+            "url": {"raw": "{{baseUrl}}/lessons/20000000-0000-0000-0000-000000000005/cancel", "host": ["{{baseUrl}}"], "path": ["lessons", "20000000-0000-0000-0000-000000000005", "cancel"]}
+          }
+        },
+        {
+          "name": "Register student with duplicate email → 409",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('409', () => pm.response.to.have.status(409));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/auth/register/student", "host": ["{{baseUrl}}"], "path": ["auth", "register", "student"]},
+            "body": {"mode": "raw", "raw": "{\n  \"firstName\": \"Dup\",\n  \"lastName\": \"Dup\",\n  \"middleName\": \"Dup\",\n  \"email\": \"admin@test.local\",\n  \"password\": \"test1234\",\n  \"groupId\": \"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\",\n  \"campusId\": 3\n}"}
+          }
+        }
+      ]
+    }
+  ]
+}

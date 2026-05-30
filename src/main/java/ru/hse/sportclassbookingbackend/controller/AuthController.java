@@ -96,12 +96,14 @@ public class AuthController {
     @Operation(
             summary = "Подтверждение email по токену из письма",
             description = "Эндпоинт, на который ведёт ссылка из письма верификации (GET, чтобы работал клик из почтового клиента). " +
-                    "Помечает пользователя как `email_verified=true`. Токен одноразовый, TTL 24 часа. " +
-                    "Идемпотентен: если пользователь уже подтверждён, всё равно вернёт 204."
+                    "Помечает пользователя как `email_verified=true`. Токен одноразовый (getAndDelete из Redis), TTL задаётся ${mail.verification.expiration}. " +
+                    "Повторное использование того же токена — 400. Если выпущен новый токен (через /resend-verification), а пользователь уже верифицирован — вернёт 204 без действий."
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Email подтверждён"),
+            @ApiResponse(responseCode = "204", description = "Email подтверждён (или уже был подтверждён)"),
             @ApiResponse(responseCode = "400", description = "Токен невалидный, истёкший или уже использованный",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Пользователь, привязанный к токену, не существует (теоретически возможно при удалении аккаунта)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @GetMapping("/verify-email")
@@ -130,7 +132,7 @@ public class AuthController {
 
     @Operation(
             summary = "Запрос сброса пароля по email",
-            description = "Если email зарегистрирован — отправляет 6-значный PIN на почту, действующий 10 минут. " +
+            description = "Если email зарегистрирован — отправляет 6-значный PIN на почту. TTL PIN-а задаётся в ${mail.reset.expiration}. " +
                     "Всегда возвращает 204 (даже если email неизвестен) — чтобы не раскрывать факт существования пользователя. " +
                     "Используется в паре с POST /auth/reset-password."
     )
@@ -150,7 +152,7 @@ public class AuthController {
             description = "Принимает email, 6-значный PIN из письма и новый пароль. " +
                     "При успехе пароль обновляется и все активные refresh-токены этого юзера инвалидируются — " +
                     "придётся залогиниться заново через POST /auth/login. " +
-                    "При 5+ неверных попытках в рамках одной сессии сброса — сессия гасится, нужно запросить новый PIN."
+                    "Лимит неверных попыток задаётся в ${mail.reset.max-attempts}; при превышении — сессия гасится, нужно запросить новый PIN."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Пароль обновлён, активные сессии отозваны"),
