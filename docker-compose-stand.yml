@@ -64,6 +64,9 @@ services:
       MAIL_FROM: ${MAIL_FROM}
       APP_BASE_URL: ${APP_BASE_URL}
 
+    volumes:
+      - ./logs:/app/logs
+
     ports:
       - "8080:8080"
 
