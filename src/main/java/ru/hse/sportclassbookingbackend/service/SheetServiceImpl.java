@@ -1,6 +1,7 @@
 package ru.hse.sportclassbookingbackend.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.hse.sportclassbookingbackend.dto.lesson.LessonStatus;
@@ -29,6 +30,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SheetServiceImpl implements SheetService {
@@ -73,7 +75,10 @@ public class SheetServiceImpl implements SheetService {
         sheet.setStudent(student);
         sheet.setVisited(false);
 
-        return new SheetIdResponse(sheetRepository.save(sheet).getId());
+        Sheet saved = sheetRepository.save(sheet);
+        log.info("Sheet registered: sheetId={} lessonId={} studentId={}",
+                saved.getId(), lessonId, student.getId());
+        return new SheetIdResponse(saved.getId());
     }
 
     @Override
@@ -95,6 +100,8 @@ public class SheetServiceImpl implements SheetService {
         checkCancelPermission(sheet, principal);
 
         sheetRepository.delete(sheet);
+        log.info("Sheet cancelled: sheetId={} lessonId={} studentId={} by userId={} role={}",
+                sheetId, lessonId, sheet.getStudent().getId(), principal.getId(), principal.getRole());
     }
 
     @Override
@@ -135,6 +142,8 @@ public class SheetServiceImpl implements SheetService {
 
         sheetRepository.saveAll(sheets);
 
+        log.info("Attendance marked: lessonId={} sheets={} by userId={} role={}",
+                lessonId, request.marks().size(), principal.getId(), principal.getRole());
         return sheets.stream()
                 .map(sheetMapper::toAttendeeResponse)
                 .toList();

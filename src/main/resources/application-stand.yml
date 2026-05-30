@@ -18,3 +18,9 @@ security:
     expiration: ${REFRESH_EXPIRATION_MILLIS}
   bcrypt:
     rounds: ${BCRYPT_ROUNDS}
+
+
+logging:
+  level:
+    root: WARN
+    ru.hse.sportclassbookingbackend: INFO

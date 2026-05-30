@@ -1,6 +1,7 @@
 package ru.hse.sportclassbookingbackend.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +30,7 @@ import ru.hse.sportclassbookingbackend.security.RefreshTokenService;
 
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
@@ -78,22 +80,32 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
+                .orElseThrow(() -> {
+                    log.warn("Login failed: user not found for email='{}'", request.email());
+                    return new UnauthorizedException("Invalid email or password");
+                });
 
-        if (!passwordEncoder.matches(request.password(), user.getPassword()))
+        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+            log.warn("Login failed: bad password for userId={} email='{}'", user.getId(), request.email());
             throw new UnauthorizedException("Invalid email or password");
+        }
 
         UUID refreshToken = refreshTokenService.create(user.getId(), user.getRole());
         String accessToken = jwtService.generateAccessToken(user.getId(), user.getRole());
+        log.info("Login success: userId={} role={}", user.getId(), user.getRole());
         return AuthResponse.of(accessToken, refreshToken);
     }
 
     @Override
     public AuthResponse refresh(UUID refresh) {
         RefreshTokenService.RefreshTokenData tokenData = refreshTokenService.getTokenData(refresh)
-                .orElseThrow(() -> new UnauthorizedException("Invalid token"));
+                .orElseThrow(() -> {
+                    log.warn("Token refresh failed: invalid or expired refresh token");
+                    return new UnauthorizedException("Invalid token");
+                });
 
         String accessToken = jwtService.generateAccessToken(tokenData.userId(), tokenData.role());
+        log.info("Token refreshed: userId={} role={}", tokenData.userId(), tokenData.role());
 
         return AuthResponse.of(accessToken, refresh);
     }
@@ -101,6 +113,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void logout(UUID refresh){
         refreshTokenService.delete(refresh);
+        log.info("Logout: refresh token revoked");
     }
 
     private void checkEmailNotExists(String email){
@@ -119,6 +132,7 @@ public class AuthServiceImpl implements AuthService {
         user = userRepository.save(user);
         UUID refreshToken = refreshTokenService.create(user.getId(), user.getRole());
         String accessToken = jwtService.generateAccessToken(user.getId(), user.getRole());
+        log.info("Registered new user: userId={} role={} email='{}'", user.getId(), user.getRole(), user.getEmail());
         return AuthResponse.of(accessToken, refreshToken);
     }
 }

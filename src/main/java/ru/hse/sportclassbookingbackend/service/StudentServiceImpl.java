@@ -1,6 +1,7 @@
 package ru.hse.sportclassbookingbackend.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import ru.hse.sportclassbookingbackend.dto.student.StudentHealthGroupPatchRequest;
@@ -21,6 +22,7 @@ import ru.hse.sportclassbookingbackend.repository.UserRepository;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class StudentServiceImpl implements StudentService{
@@ -36,6 +38,7 @@ public class StudentServiceImpl implements StudentService{
         studentRepository.findById(id).ifPresent(student -> {
             student.setIsActive(false);
             studentRepository.save(student);
+            log.info("Student deactivated: studentId={}", id);
         });
     }
 
@@ -62,7 +65,9 @@ public class StudentServiceImpl implements StudentService{
             student.setHealthGroup(healthGroup);
         }
 
-        return studentMapper.toResponse(studentRepository.save(student));
+        Student saved = studentRepository.save(student);
+        log.info("Student updated: studentId={}", saved.getId());
+        return studentMapper.toResponse(saved);
     }
 
     public StudentResponse updateHealthGroup(UUID id, StudentHealthGroupPatchRequest request) {
@@ -73,7 +78,10 @@ public class StudentServiceImpl implements StudentService{
                 .orElseThrow(() -> new NotFoundException("HealthGroup with id " + request.healthGroupId() + " not found"));
 
         student.setHealthGroup(healthGroup);
-        return studentMapper.toResponse(studentRepository.save(student));
+        Student saved = studentRepository.save(student);
+        log.info("Student health group updated: studentId={} healthGroupId={}",
+                saved.getId(), request.healthGroupId());
+        return studentMapper.toResponse(saved);
     }
 
     public StudentResponse getById(UUID id) {
@@ -98,7 +106,9 @@ public class StudentServiceImpl implements StudentService{
             student.setPassword(passwordEncoder.encode(request.password()));
         }
 
-        return studentMapper.toResponse(studentRepository.save(student));
+        Student saved = studentRepository.save(student);
+        log.info("Student self-updated: studentId={}", saved.getId());
+        return studentMapper.toResponse(saved);
     }
 
     private void checkEmailAvailable(String newEmail, String currentEmail) {

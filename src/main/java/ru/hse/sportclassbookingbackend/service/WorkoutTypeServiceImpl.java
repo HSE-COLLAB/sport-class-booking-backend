@@ -1,6 +1,7 @@
 package ru.hse.sportclassbookingbackend.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.hse.sportclassbookingbackend.dto.workouttype.WorkoutTypePatchRequest;
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class WorkoutTypeServiceImpl implements WorkoutTypeService {
@@ -50,7 +52,9 @@ public class WorkoutTypeServiceImpl implements WorkoutTypeService {
         workoutType.setAllowedHealthGroups(findHealthGroupsOrThrow(request.allowedHealthGroupIds()));
         workoutType.setIsActive(true);
 
-        return workoutTypeMapper.toResponse(workoutTypeRepository.save(workoutType));
+        WorkoutType saved = workoutTypeRepository.save(workoutType);
+        log.info("WorkoutType created: workoutTypeId={} title='{}'", saved.getId(), saved.getTitle());
+        return workoutTypeMapper.toResponse(saved);
     }
 
     @Transactional
@@ -65,13 +69,16 @@ public class WorkoutTypeServiceImpl implements WorkoutTypeService {
             workoutType.setAllowedHealthGroups(findHealthGroupsOrThrow(request.allowedHealthGroupIds()));
         }
 
-        return workoutTypeMapper.toResponse(workoutTypeRepository.save(workoutType));
+        WorkoutType saved = workoutTypeRepository.save(workoutType);
+        log.info("WorkoutType updated: workoutTypeId={}", saved.getId());
+        return workoutTypeMapper.toResponse(saved);
     }
 
     public void delete(UUID id) {
         workoutTypeRepository.findByIdAndIsActiveTrue(id).ifPresent(wt -> {
             wt.setIsActive(false);
             workoutTypeRepository.save(wt);
+            log.info("WorkoutType deactivated: workoutTypeId={}", id);
         });
     }
 
