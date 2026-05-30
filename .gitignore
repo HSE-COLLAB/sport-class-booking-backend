@@ -9,6 +9,9 @@
 *.ipr
 /out/
 
-# OS (на всякий случай)
+# OS
 .DS_Store
 Thumbs.db
+
+# Security
+.env

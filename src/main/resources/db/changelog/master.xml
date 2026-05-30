@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+          http://www.liquibase.org/xml/ns/dbchangelog
+          https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <include file="changes/v1.0.0-init/v1.0.0-init.xml" relativeToChangelogFile="true"/>
+    <include file="changes/v1.0.1-insert-health-groups/v1.0.1-insert-health-groups.xml" relativeToChangelogFile="true"/>
+    <include file="changes/v1.0.2-is-active-column-for-users/v1.0.2-is-active-column-for-users.xml" relativeToChangelogFile="true"/>
+    <include file="changes/v1.0.3-add-campuses/v1.0.3-add-campuses.xml" relativeToChangelogFile="true"/>
+    <include file="changes/v1.0.4-add-lesson-status/v1.0.4-add-lesson-status.xml" relativeToChangelogFile="true"/>
+    <include file="changes/v1.0.5-unique-sheet-lesson-student/v1.0.5-unique-sheet-lesson-student.xml" relativeToChangelogFile="true"/>
+    <include file="changes/v1.0.6-email-verified/v1.0.6-email-verified.xml" relativeToChangelogFile="true"/>
+</databaseChangeLog>

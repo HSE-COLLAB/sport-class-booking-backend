@@ -1,0 +1,441 @@
+{
+  "info": {
+    "name": "Sport Class Booking — Student",
+    "description": "Сценарии для роли STUDENT + блок с настоящей регистрацией через email.\n\nПредусловия:\n1. Запущен бекенд на http://localhost:8080/api (профиль local).\n2. Накатана миграция v1.0.7-test-data.\n3. Для real-email сценариев: подключённый SMTP (mail.* в application-local.yml) и доступ к почте kravchi0803@yandex.ru / kravchi0803@gmail.com.\n\nПароль seeded-юзеров: test1234.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {"key": "baseUrl", "value": "http://localhost:8080/api"},
+    {"key": "student1Access", "value": ""},
+    {"key": "student1Refresh", "value": ""},
+    {"key": "student1Id", "value": "55555555-5555-5555-5555-555555555551"},
+    {"key": "student4Access", "value": ""},
+    {"key": "student4Id", "value": "55555555-5555-5555-5555-555555555554"},
+    {"key": "campusNN", "value": "3"},
+    {"key": "lessonUpcomingVolley", "value": "20000000-0000-0000-0000-000000000001"},
+    {"key": "lessonUpcomingYoga", "value": "20000000-0000-0000-0000-000000000003"},
+    {"key": "lessonUpcomingVolley2", "value": "20000000-0000-0000-0000-000000000002"},
+    {"key": "lessonCancelled", "value": "20000000-0000-0000-0000-000000000005"},
+    {"key": "groupId", "value": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"},
+    {"key": "realStudentEmail", "value": "kravchi0803@yandex.ru"},
+    {"key": "realTeacherEmail", "value": "kravchi0803@gmail.com"},
+    {"key": "realStudentPassword", "value": "RealStud-2026"},
+    {"key": "realStudentNewPassword", "value": "RealStud-2026-NEW"},
+    {"key": "realTeacherPassword", "value": "RealTeach-2026"},
+    {"key": "realStudentVerifyToken", "value": ""},
+    {"key": "realStudentResetPin", "value": ""},
+    {"key": "realTeacherVerifyToken", "value": ""},
+    {"key": "createdSheetId", "value": ""}
+  ],
+  "item": [
+    {
+      "name": "00 Setup — Login Student",
+      "item": [
+        {
+          "name": "Login student1 (health group 1)",
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.collectionVariables.set('student1Access', j.accessToken);",
+            "pm.collectionVariables.set('student1Refresh', j.refreshToken);"
+          ], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"]},
+            "body": {"mode": "raw", "raw": "{\n  \"email\": \"student1@test.local\",\n  \"password\": \"test1234\"\n}"}
+          }
+        },
+        {
+          "name": "Login student4 (health group 5) — для error сценариев",
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.collectionVariables.set('student4Access', pm.response.json().accessToken);"
+          ], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"]},
+            "body": {"mode": "raw", "raw": "{\n  \"email\": \"student4@test.local\",\n  \"password\": \"test1234\"\n}"}
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 Browse lessons",
+      "item": [
+        {
+          "name": "Get all NN lessons",
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.test('seed has 5 lessons', () => pm.expect(pm.response.json().content.length).to.be.at.least(5));"
+          ], "type": "text/javascript"}}],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{student1Access}}"}],
+            "url": {"raw": "{{baseUrl}}/lessons?campusId={{campusNN}}", "host": ["{{baseUrl}}"], "path": ["lessons"], "query": [{"key": "campusId", "value": "{{campusNN}}"}]}
+          }
+        },
+        {
+          "name": "Filter by myHealthGroup",
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));"
+          ], "type": "text/javascript"}}],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{student1Access}}"}],
+            "url": {"raw": "{{baseUrl}}/lessons?campusId={{campusNN}}&myHealthGroup=true", "host": ["{{baseUrl}}"], "path": ["lessons"], "query": [{"key": "campusId", "value": "{{campusNN}}"}, {"key": "myHealthGroup", "value": "true"}]}
+          }
+        },
+        {
+          "name": "Filter UPCOMING only",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('200', () => pm.response.to.have.status(200));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{student1Access}}"}],
+            "url": {"raw": "{{baseUrl}}/lessons?campusId={{campusNN}}&status=UPCOMING", "host": ["{{baseUrl}}"], "path": ["lessons"], "query": [{"key": "campusId", "value": "{{campusNN}}"}, {"key": "status", "value": "UPCOMING"}]}
+          }
+        },
+        {
+          "name": "Exclude CANCELLED",
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.test('no CANCELLED', () => { const c = pm.response.json().content; c.forEach(l => pm.expect(l.status).to.eql('ACTIVE')); });"
+          ], "type": "text/javascript"}}],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{student1Access}}"}],
+            "url": {"raw": "{{baseUrl}}/lessons?campusId={{campusNN}}&includeCancelled=false", "host": ["{{baseUrl}}"], "path": ["lessons"], "query": [{"key": "campusId", "value": "{{campusNN}}"}, {"key": "includeCancelled", "value": "false"}]}
+          }
+        },
+        {
+          "name": "Get lesson by id",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('200', () => pm.response.to.have.status(200));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{student1Access}}"}],
+            "url": {"raw": "{{baseUrl}}/lessons/{{lessonUpcomingVolley}}", "host": ["{{baseUrl}}"], "path": ["lessons", "{{lessonUpcomingVolley}}"]}
+          }
+        },
+        {
+          "name": "Get my lessons",
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.test('sheet present for student', () => { const c = pm.response.json().content; if (c.length) pm.expect(c[0].sheet).to.not.eql(null); });"
+          ], "type": "text/javascript"}}],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{student1Access}}"}],
+            "url": {"raw": "{{baseUrl}}/lessons/my", "host": ["{{baseUrl}}"], "path": ["lessons", "my"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Sign up / Cancel sheet",
+      "item": [
+        {
+          "name": "Register on UPCOMING-Volley2 (новый sheet)",
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('201', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('createdSheetId', pm.response.json().id);"
+          ], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{student1Access}}"}],
+            "url": {"raw": "{{baseUrl}}/lessons/{{lessonUpcomingVolley2}}/sheets", "host": ["{{baseUrl}}"], "path": ["lessons", "{{lessonUpcomingVolley2}}", "sheets"]}
+          }
+        },
+        {
+          "name": "Get my lessons — должен включать новый sheet",
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.test('at least 2 my lessons', () => pm.expect(pm.response.json().content.length).to.be.at.least(2));"
+          ], "type": "text/javascript"}}],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{student1Access}}"}],
+            "url": {"raw": "{{baseUrl}}/lessons/my", "host": ["{{baseUrl}}"], "path": ["lessons", "my"]}
+          }
+        },
+        {
+          "name": "Cancel own sheet",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('204', () => pm.response.to.have.status(204));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "DELETE",
+            "header": [{"key": "Authorization", "value": "Bearer {{student1Access}}"}],
+            "url": {"raw": "{{baseUrl}}/lessons/{{lessonUpcomingVolley2}}/sheets/{{createdSheetId}}", "host": ["{{baseUrl}}"], "path": ["lessons", "{{lessonUpcomingVolley2}}", "sheets", "{{createdSheetId}}"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Self-update profile",
+      "item": [
+        {
+          "name": "Get own profile",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('200', () => pm.response.to.have.status(200));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{student1Access}}"}],
+            "url": {"raw": "{{baseUrl}}/students/{{student1Id}}", "host": ["{{baseUrl}}"], "path": ["students", "{{student1Id}}"]}
+          }
+        },
+        {
+          "name": "Self-update firstName",
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.test('firstName updated', () => pm.expect(pm.response.json().firstName).to.eql('Алексей-Self'));"
+          ], "type": "text/javascript"}}],
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Authorization", "value": "Bearer {{student1Access}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/students/{{student1Id}}/self-update", "host": ["{{baseUrl}}"], "path": ["students", "{{student1Id}}", "self-update"]},
+            "body": {"mode": "raw", "raw": "{\n  \"firstName\": \"Алексей-Self\"\n}"}
+          }
+        },
+        {
+          "name": "Revert firstName",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('200', () => pm.response.to.have.status(200));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Authorization", "value": "Bearer {{student1Access}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/students/{{student1Id}}/self-update", "host": ["{{baseUrl}}"], "path": ["students", "{{student1Id}}", "self-update"]},
+            "body": {"mode": "raw", "raw": "{\n  \"firstName\": \"Алексей\"\n}"}
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Errors (student perspective)",
+      "item": [
+        {
+          "name": "Register twice on same lesson → 409",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('409', () => pm.response.to.have.status(409));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{student1Access}}"}],
+            "url": {"raw": "{{baseUrl}}/lessons/{{lessonUpcomingVolley}}/sheets", "host": ["{{baseUrl}}"], "path": ["lessons", "{{lessonUpcomingVolley}}", "sheets"]}
+          }
+        },
+        {
+          "name": "Register on CANCELLED lesson → 409",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('409', () => pm.response.to.have.status(409));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{student1Access}}"}],
+            "url": {"raw": "{{baseUrl}}/lessons/{{lessonCancelled}}/sheets", "host": ["{{baseUrl}}"], "path": ["lessons", "{{lessonCancelled}}", "sheets"]}
+          }
+        },
+        {
+          "name": "Student4 (HG=5) tries Volleyball [1,2] → 400",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('400 (health group not allowed)', () => pm.response.to.have.status(400));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{student4Access}}"}],
+            "url": {"raw": "{{baseUrl}}/lessons/{{lessonUpcomingVolley2}}/sheets", "host": ["{{baseUrl}}"], "path": ["lessons", "{{lessonUpcomingVolley2}}", "sheets"]}
+          }
+        },
+        {
+          "name": "Student creates lesson → 403",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('403', () => pm.response.to.have.status(403));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{student1Access}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/lessons", "host": ["{{baseUrl}}"], "path": ["lessons"]},
+            "body": {"mode": "raw", "raw": "{\n  \"title\": \"Cannot\",\n  \"place\": \"X\",\n  \"startTime\": \"2099-12-30T10:00:00\",\n  \"endTime\": \"2099-12-30T11:00:00\",\n  \"totalPlaces\": 5,\n  \"workoutTypeId\": \"10000000-0000-0000-0000-000000000001\",\n  \"campusId\": 3\n}"}
+          }
+        },
+        {
+          "name": "Student lists teachers → 403",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('403', () => pm.response.to.have.status(403));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{student1Access}}"}],
+            "url": {"raw": "{{baseUrl}}/teachers", "host": ["{{baseUrl}}"], "path": ["teachers"]}
+          }
+        },
+        {
+          "name": "Student lists students → 403",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('403', () => pm.response.to.have.status(403));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{student1Access}}"}],
+            "url": {"raw": "{{baseUrl}}/students", "host": ["{{baseUrl}}"], "path": ["students"]}
+          }
+        },
+        {
+          "name": "Student updates own healthGroup via admin endpoint → 403",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('403', () => pm.response.to.have.status(403));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Authorization", "value": "Bearer {{student1Access}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/students/{{student1Id}}/health-group", "host": ["{{baseUrl}}"], "path": ["students", "{{student1Id}}", "health-group"]},
+            "body": {"mode": "raw", "raw": "{\n  \"healthGroupId\": 3\n}"}
+          }
+        },
+        {
+          "name": "Self-update someone else → 403",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('403', () => pm.response.to.have.status(403));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Authorization", "value": "Bearer {{student1Access}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/students/55555555-5555-5555-5555-555555555552/self-update", "host": ["{{baseUrl}}"], "path": ["students", "55555555-5555-5555-5555-555555555552", "self-update"]},
+            "body": {"mode": "raw", "raw": "{\n  \"firstName\": \"Hack\"\n}"}
+          }
+        },
+        {
+          "name": "Get nonexistent lesson → 404",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('404', () => pm.response.to.have.status(404));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{student1Access}}"}],
+            "url": {"raw": "{{baseUrl}}/lessons/00000000-0000-0000-0000-000000000000", "host": ["{{baseUrl}}"], "path": ["lessons", "00000000-0000-0000-0000-000000000000"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Real-email — STUDENT (kravchi0803@yandex.ru)",
+      "description": "Полный сценарий регистрации настоящего юзера через настоящую почту.\n\nКаждый раз перед запуском этого блока убедись, что в БД нет уже-верифицированного пользователя с email = kravchi0803@yandex.ru (иначе register вернёт 409). Удалить можно SQL: DELETE FROM students WHERE user_id IN (SELECT id FROM users WHERE email='kravchi0803@yandex.ru'); DELETE FROM users WHERE email='kravchi0803@yandex.ru';\n\nПорядок: register → (открыть письмо, скопировать token из ссылки) → положить в collection variable realStudentVerifyToken → verify → login → forgot-password → (открыть письмо, взять 6-значный PIN) → положить в realStudentResetPin → reset-password → login с новым паролем.",
+      "item": [
+        {
+          "name": "1. Register student (real email)",
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('202', () => pm.response.to.have.status(202));",
+            "pm.test('email returned', () => pm.expect(pm.response.json().email).to.eql(pm.collectionVariables.get('realStudentEmail')));"
+          ], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/auth/register/student", "host": ["{{baseUrl}}"], "path": ["auth", "register", "student"]},
+            "body": {"mode": "raw", "raw": "{\n  \"firstName\": \"Никита\",\n  \"lastName\": \"Кравченко\",\n  \"middleName\": \"Алексеевич\",\n  \"email\": \"{{realStudentEmail}}\",\n  \"password\": \"{{realStudentPassword}}\",\n  \"groupId\": \"{{groupId}}\",\n  \"campusId\": {{campusNN}}\n}"}
+          }
+        },
+        {
+          "name": "2. Login до верификации → 401",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('401', () => pm.response.to.have.status(401));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"]},
+            "body": {"mode": "raw", "raw": "{\n  \"email\": \"{{realStudentEmail}}\",\n  \"password\": \"{{realStudentPassword}}\"\n}"}
+          }
+        },
+        {
+          "name": "3. Resend verification",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('204', () => pm.response.to.have.status(204));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/auth/resend-verification", "host": ["{{baseUrl}}"], "path": ["auth", "resend-verification"]},
+            "body": {"mode": "raw", "raw": "{\n  \"email\": \"{{realStudentEmail}}\"\n}"}
+          }
+        },
+        {
+          "name": "4. ⚠ Verify email (ВПИСАТЬ token из последнего письма в realStudentVerifyToken)",
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('204 (или 400 если token не подставлен)', () => pm.expect([204, 400]).to.include(pm.response.code));"
+          ], "type": "text/javascript"}}],
+          "request": {
+            "method": "GET",
+            "url": {"raw": "{{baseUrl}}/auth/verify-email?token={{realStudentVerifyToken}}", "host": ["{{baseUrl}}"], "path": ["auth", "verify-email"], "query": [{"key": "token", "value": "{{realStudentVerifyToken}}"}]}
+          }
+        },
+        {
+          "name": "5. Login после верификации → 200",
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.test('access token present', () => pm.expect(pm.response.json().accessToken).to.be.a('string'));"
+          ], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"]},
+            "body": {"mode": "raw", "raw": "{\n  \"email\": \"{{realStudentEmail}}\",\n  \"password\": \"{{realStudentPassword}}\"\n}"}
+          }
+        },
+        {
+          "name": "6. Forgot password",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('204', () => pm.response.to.have.status(204));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/auth/forgot-password", "host": ["{{baseUrl}}"], "path": ["auth", "forgot-password"]},
+            "body": {"mode": "raw", "raw": "{\n  \"email\": \"{{realStudentEmail}}\"\n}"}
+          }
+        },
+        {
+          "name": "7. ⚠ Reset password (ВПИСАТЬ 6-значный PIN из письма в realStudentResetPin)",
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('204 (или 400 если PIN не подставлен)', () => pm.expect([204, 400]).to.include(pm.response.code));"
+          ], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/auth/reset-password", "host": ["{{baseUrl}}"], "path": ["auth", "reset-password"]},
+            "body": {"mode": "raw", "raw": "{\n  \"email\": \"{{realStudentEmail}}\",\n  \"code\": \"{{realStudentResetPin}}\",\n  \"newPassword\": \"{{realStudentNewPassword}}\"\n}"}
+          }
+        },
+        {
+          "name": "8. Login с новым паролем → 200",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('200', () => pm.response.to.have.status(200));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"]},
+            "body": {"mode": "raw", "raw": "{\n  \"email\": \"{{realStudentEmail}}\",\n  \"password\": \"{{realStudentNewPassword}}\"\n}"}
+          }
+        },
+        {
+          "name": "9. Login со старым паролем → 401",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('401', () => pm.response.to.have.status(401));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"]},
+            "body": {"mode": "raw", "raw": "{\n  \"email\": \"{{realStudentEmail}}\",\n  \"password\": \"{{realStudentPassword}}\"\n}"}
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Real-email — TEACHER (kravchi0803@gmail.com)",
+      "description": "Регистрация и верификация настоящего преподавателя. После register открыть письмо, скопировать token, вставить в realTeacherVerifyToken.",
+      "item": [
+        {
+          "name": "1. Register teacher (real email)",
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('202', () => pm.response.to.have.status(202));"
+          ], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/auth/register/teacher", "host": ["{{baseUrl}}"], "path": ["auth", "register", "teacher"]},
+            "body": {"mode": "raw", "raw": "{\n  \"firstName\": \"Никита\",\n  \"lastName\": \"Кравченко\",\n  \"middleName\": \"Алексеевич\",\n  \"email\": \"{{realTeacherEmail}}\",\n  \"password\": \"{{realTeacherPassword}}\",\n  \"position\": \"Преподаватель (реальный аккаунт)\",\n  \"campusId\": {{campusNN}}\n}"}
+          }
+        },
+        {
+          "name": "2. ⚠ Verify email (вписать token в realTeacherVerifyToken)",
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('204 (или 400 если token не подставлен)', () => pm.expect([204, 400]).to.include(pm.response.code));"
+          ], "type": "text/javascript"}}],
+          "request": {
+            "method": "GET",
+            "url": {"raw": "{{baseUrl}}/auth/verify-email?token={{realTeacherVerifyToken}}", "host": ["{{baseUrl}}"], "path": ["auth", "verify-email"], "query": [{"key": "token", "value": "{{realTeacherVerifyToken}}"}]}
+          }
+        },
+        {
+          "name": "3. Login real teacher",
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('200', () => pm.response.to.have.status(200));"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"]},
+            "body": {"mode": "raw", "raw": "{\n  \"email\": \"{{realTeacherEmail}}\",\n  \"password\": \"{{realTeacherPassword}}\"\n}"}
+          }
+        }
+      ]
+    }
+  ]
+}

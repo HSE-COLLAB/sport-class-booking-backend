@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="v1.0.0-init-create-health-groups" author="dev">
+        <sqlFile path="sql/create_health_groups.sql"
+                 relativeToChangelogFile="true"
+                 encoding="UTF-8"/>
+        <rollback>
+            <sqlFile path="sql/create_health_groups_rollback.sql"
+                     relativeToChangelogFile="true"
+                     encoding="UTF-8"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="v1.0.0-init-create-users" author="dev">
+        <sqlFile path="sql/create_users.sql"
+                 relativeToChangelogFile="true"
+                 encoding="UTF-8"/>
+        <rollback>
+            <sqlFile path="sql/create_users_rollback.sql"
+                     relativeToChangelogFile="true"
+                     encoding="UTF-8"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="v1.0.0-init-create-groups" author="dev">
+        <sqlFile path="sql/create_groups.sql"
+                 relativeToChangelogFile="true"
+                 encoding="UTF-8"/>
+        <rollback>
+            <sqlFile path="sql/create_groups_rollback.sql"
+                     relativeToChangelogFile="true"
+                     encoding="UTF-8"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="v1.0.0-init-create-students" author="dev">
+        <sqlFile path="sql/create_students.sql"
+                 relativeToChangelogFile="true"
+                 encoding="UTF-8"/>
+        <rollback>
+            <sqlFile path="sql/create_students_rollback.sql"
+                     relativeToChangelogFile="true"
+                     encoding="UTF-8"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="v1.0.0-init-create-teachers" author="dev">
+        <sqlFile path="sql/create_teachers.sql"
+                 relativeToChangelogFile="true"
+                 encoding="UTF-8"/>
+        <rollback>
+            <sqlFile path="sql/create_teachers_rollback.sql"
+                     relativeToChangelogFile="true"
+                     encoding="UTF-8"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="v1.0.0-init-create-workout-types" author="dev">
+        <sqlFile path="sql/create_workout_types.sql"
+                 relativeToChangelogFile="true"
+                 encoding="UTF-8"/>
+        <rollback>
+            <sqlFile path="sql/create_workout_types_rollback.sql"
+                     relativeToChangelogFile="true"
+                     encoding="UTF-8"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="v1.0.0-init-create-lessons" author="dev">
+        <sqlFile path="sql/create_lessons.sql"
+                 relativeToChangelogFile="true"
+                 encoding="UTF-8"/>
+        <rollback>
+            <sqlFile path="sql/create_lessons_rollback.sql"
+                     relativeToChangelogFile="true"
+                     encoding="UTF-8"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="v1.0.0-init-create-sheets" author="dev">
+        <sqlFile path="sql/create_sheets.sql"
+                 relativeToChangelogFile="true"
+                 encoding="UTF-8"/>
+        <rollback>
+            <sqlFile path="sql/create_sheets_rollback.sql"
+                     relativeToChangelogFile="true"
+                     encoding="UTF-8"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

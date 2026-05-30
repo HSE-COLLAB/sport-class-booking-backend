@@ -1,0 +1,43 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://db:5432/sport_class_booking_db
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  data:
+    redis:
+      host: ${REDIS_URL}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+mail:
+  from: ${MAIL_FROM}
+
+app:
+  base-url: ${APP_BASE_URL}
+
+security:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration: ${JWT_EXPIRATION_MILLIS}
+  refresh:
+    expiration: ${REFRESH_EXPIRATION_MILLIS}
+  bcrypt:
+    rounds: ${BCRYPT_ROUNDS}
+
+
+logging:
+  level:
+    root: INFO
+    ru.hse.sportclassbookingbackend: INFO

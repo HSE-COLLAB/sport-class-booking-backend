@@ -1,0 +1,49 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/sport_class_booking_db
+    username: ${DB_USER:user}
+    password: ${DB_PASSWORD:qwerty}
+    driver-class-name: org.postgresql.Driver
+  data:
+    redis:
+      host: ${REDIS_URL:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:qwerty}
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:some-email@gmail.com}
+    password: ${MAIL_PASSWORD:some-app-password}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+mail:
+  from: ${MAIL_FROM:Спорт ВШЭ <some-email@gmail.com>}
+
+app:
+  base-url: ${APP_BASE_URL:http://localhost:8080/api}
+
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:very-very-secret-key-min-256-bytes-required}
+    expiration: ${JWT_EXPIRATION_MILLIS:1800000}
+  refresh:
+    expiration: ${REFRESH_EXPIRATION_MILLIS:2629746000}
+  bcrypt:
+    rounds: ${BCRYPT_ROUNDS:10}
+  development:
+    default-user:
+      enabled: true
+      role: ADMIN # STUDENT | TEACHER | ADMIN
+
+
+logging:
+  level:
+    root: INFO
+    ru.hse.sportclassbookingbackend: DEBUG
+    org.springframework.security: ERROR

@@ -1,0 +1,44 @@
+spring:
+  mail:
+    host: localhost
+    port: 25
+
+management:
+  health:
+    mail:
+      enabled: false
+
+mail:
+  from: test@test
+  verification:
+    subject: "Test verification"
+    expiration: 60000
+  reset:
+    subject: "Test reset"
+    expiration: 60000
+    max-attempts: 5
+  sheet-created:
+    subject: "Test sheet-created"
+  sheet-cancelled:
+    subject: "Test sheet-cancelled"
+  lesson-changed:
+    subject: "Test lesson-changed"
+  lesson-cancelled:
+    subject: "Test lesson-cancelled"
+  health-group-changed:
+    subject: "Test health-group-changed"
+
+app:
+  base-url: http://localhost:8080/api
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:very-very-secret-key-min-256-bytes-required}
+    expiration: ${JWT_EXPIRATION_MILLIS:1800000}
+  refresh:
+    expiration: ${REFRESH_EXPIRATION_MILLIS:2629746000}
+  bcrypt:
+    rounds: ${BCRYPT_ROUNDS:4}
+  development:
+    default-user:
+      enabled: false
