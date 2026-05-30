@@ -1,6 +1,7 @@
 package ru.hse.sportclassbookingbackend.service.mail;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -9,6 +10,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EmailVerificationTokenService {
@@ -24,6 +26,7 @@ public class EmailVerificationTokenService {
         UUID token = UUID.randomUUID();
         String key = VERIFY_PREFIX + token;
         redisTemplate.opsForValue().set(key, userId.toString(), verificationExpiration, TimeUnit.MILLISECONDS);
+        log.debug("Email verification token issued for userId={}", userId);
         return token;
     }
 

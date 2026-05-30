@@ -1,6 +1,7 @@
 package ru.hse.sportclassbookingbackend.service.mail;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Service;
 import java.security.SecureRandom;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PasswordResetCodeService {
@@ -32,6 +34,7 @@ public class PasswordResetCodeService {
         redisTemplate.opsForValue().set(codeKey, code, resetExpirationMillis, TimeUnit.MILLISECONDS);
         redisTemplate.delete(attemptsKey);
 
+        log.debug("Password reset code issued for email='{}'", email);
         return code;
     }
 
@@ -55,6 +58,8 @@ public class PasswordResetCodeService {
 
         if (attempts != null && attempts > maxAttempts) {
             // Слишком много попыток — гасим всю сессию сброса
+            log.warn("Password reset attempts exceeded ({}/{}) for email='{}', session terminated",
+                    attempts, maxAttempts, email);
             redisTemplate.delete(codeKey);
             redisTemplate.delete(attemptsKey);
             return false;

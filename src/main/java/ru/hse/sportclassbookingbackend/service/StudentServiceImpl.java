@@ -1,6 +1,7 @@
 package ru.hse.sportclassbookingbackend.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ import ru.hse.sportclassbookingbackend.repository.UserRepository;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class StudentServiceImpl implements StudentService{
@@ -40,6 +42,7 @@ public class StudentServiceImpl implements StudentService{
         studentRepository.findById(id).ifPresent(student -> {
             student.setIsActive(false);
             studentRepository.save(student);
+            log.info("Student deactivated: studentId={}", id);
         });
     }
 
@@ -66,7 +69,9 @@ public class StudentServiceImpl implements StudentService{
             student.setHealthGroup(healthGroup);
         }
 
-        return studentMapper.toResponse(studentRepository.save(student));
+        Student saved = studentRepository.save(student);
+        log.info("Student updated: studentId={}", saved.getId());
+        return studentMapper.toResponse(saved);
     }
 
     @Transactional
@@ -83,6 +88,10 @@ public class StudentServiceImpl implements StudentService{
 
         if (oldGroupId == null || !oldGroupId.equals(healthGroup.getId())) {
             eventPublisher.publishEvent(new HealthGroupChangedEvent(saved.getId(), oldGroupId, healthGroup.getId()));
+            log.info("Student health group changed: studentId={} oldGroupId={} newGroupId={} (notification email queued)",
+                    saved.getId(), oldGroupId, healthGroup.getId());
+        } else {
+            log.info("Student health group unchanged: studentId={} groupId={}", saved.getId(), healthGroup.getId());
         }
 
         return studentMapper.toResponse(saved);
@@ -110,7 +119,9 @@ public class StudentServiceImpl implements StudentService{
             student.setPassword(passwordEncoder.encode(request.password()));
         }
 
-        return studentMapper.toResponse(studentRepository.save(student));
+        Student saved = studentRepository.save(student);
+        log.info("Student self-updated: studentId={}", saved.getId());
+        return studentMapper.toResponse(saved);
     }
 
     private void checkEmailAvailable(String newEmail, String currentEmail) {

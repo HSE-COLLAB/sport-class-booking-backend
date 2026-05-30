@@ -96,25 +96,37 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
+                .orElseThrow(() -> {
+                    log.warn("Login failed: user not found for email='{}'", request.email());
+                    return new UnauthorizedException("Invalid email or password");
+                });
 
-        if (!passwordEncoder.matches(request.password(), user.getPassword()))
+        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+            log.warn("Login failed: bad password for userId={} email='{}'", user.getId(), request.email());
             throw new UnauthorizedException("Invalid email or password");
+        }
 
-        if (Boolean.FALSE.equals(user.getEmailVerified()))
+        if (Boolean.FALSE.equals(user.getEmailVerified())) {
+            log.warn("Login blocked: email not verified for userId={} email='{}'", user.getId(), request.email());
             throw new UnauthorizedException("Email is not verified. Check your inbox or request a new verification email.");
+        }
 
         UUID refreshToken = refreshTokenService.create(user.getId(), user.getRole());
         String accessToken = jwtService.generateAccessToken(user.getId(), user.getRole());
+        log.info("Login success: userId={} role={}", user.getId(), user.getRole());
         return AuthResponse.of(accessToken, refreshToken);
     }
 
     @Override
     public AuthResponse refresh(UUID refresh) {
         RefreshTokenService.RefreshTokenData tokenData = refreshTokenService.getTokenData(refresh)
-                .orElseThrow(() -> new UnauthorizedException("Invalid token"));
+                .orElseThrow(() -> {
+                    log.warn("Token refresh failed: invalid or expired refresh token");
+                    return new UnauthorizedException("Invalid token");
+                });
 
         String accessToken = jwtService.generateAccessToken(tokenData.userId(), tokenData.role());
+        log.info("Token refreshed: userId={} role={}", tokenData.userId(), tokenData.role());
 
         return AuthResponse.of(accessToken, refresh);
     }
@@ -122,23 +134,29 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void logout(UUID refresh){
         refreshTokenService.delete(refresh);
+        log.info("Logout: refresh token revoked");
     }
 
     @Override
     @Transactional
     public void verifyEmail(UUID token) {
         UUID userId = emailVerificationTokenService.consume(token)
-                .orElseThrow(() -> new BadRequestException("Verification token is invalid, expired, or already used"));
+                .orElseThrow(() -> {
+                    log.warn("Email verification failed: invalid or expired token");
+                    return new BadRequestException("Verification token is invalid, expired, or already used");
+                });
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User with id " + userId + " not found"));
 
         if (Boolean.TRUE.equals(user.getEmailVerified())) {
+            log.info("Email verification skipped: userId={} already verified", userId);
             return;
         }
 
         user.setEmailVerified(true);
         userRepository.save(user);
+        log.info("Email verified: userId={}", userId);
     }
 
     @Override
@@ -155,6 +173,7 @@ public class AuthServiceImpl implements AuthService {
         }
         UUID token = emailVerificationTokenService.create(user.getId());
         emailService.sendVerificationEmail(user.getEmail(), user.getFirstName(), token);
+        log.info("Resend-verification: new token issued for userId={}", user.getId());
     }
 
     @Override
@@ -167,12 +186,14 @@ public class AuthServiceImpl implements AuthService {
         User user = userOpt.get();
         String code = passwordResetCodeService.create(email);
         emailService.sendPasswordResetEmail(user.getEmail(), user.getFirstName(), code);
+        log.info("Forgot-password: reset code issued for userId={}", user.getId());
     }
 
     @Override
     @Transactional
     public void resetPassword(String email, String code, String newPassword) {
         if (!passwordResetCodeService.verifyAndConsume(email, code)) {
+            log.warn("Password reset failed: invalid/expired code or attempts exceeded for email='{}'", email);
             throw new BadRequestException("Reset code is invalid, expired, or attempt limit exceeded");
         }
         User user = userRepository.findByEmail(email)
@@ -210,6 +231,8 @@ public class AuthServiceImpl implements AuthService {
         eventPublisher.publishEvent(new UserRegisteredEvent(
                 user.getId(), user.getEmail(), user.getFirstName(), token
         ));
+        log.info("Registered new user: userId={} role={} email='{}' (verification email queued)",
+                user.getId(), user.getRole(), user.getEmail());
         return RegisterResponse.of(user.getEmail());
     }
 }

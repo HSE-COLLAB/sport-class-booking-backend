@@ -17,6 +17,7 @@ import ru.hse.sportclassbookingbackend.security.DevAuthFilter;
 import ru.hse.sportclassbookingbackend.security.JwtAuthenticationFilter;
 import ru.hse.sportclassbookingbackend.security.RestAccessDeniedHandler;
 import ru.hse.sportclassbookingbackend.security.RestAuthenticationEntryPoint;
+import ru.hse.sportclassbookingbackend.web.HttpLoggingFilter;
 
 import java.util.Optional;
 
@@ -69,7 +70,8 @@ public class SecurityConfig {
                         .authenticationEntryPoint(restAuthenticationEntryPoint)
                         .accessDeniedHandler(restAccessDeniedHandler)
                 )
-                .addFilterBefore(jwtAuthenticationFilter, AuthorizationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, AuthorizationFilter.class)
+                .addFilterBefore(new HttpLoggingFilter(), JwtAuthenticationFilter.class);
 
         devAuthFilter.ifPresent(f ->
                 http.addFilterBefore(f, JwtAuthenticationFilter.class)
