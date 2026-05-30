@@ -1,6 +1,7 @@
 package ru.hse.sportclassbookingbackend.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.hse.sportclassbookingbackend.dto.healthgroup.HealthGroupRequest;
 import ru.hse.sportclassbookingbackend.dto.healthgroup.HealthGroupResponse;
@@ -11,6 +12,7 @@ import ru.hse.sportclassbookingbackend.repository.HealthGroupRepository;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class HealthGroupServiceImpl implements HealthGroupService {
@@ -40,6 +42,8 @@ public class HealthGroupServiceImpl implements HealthGroupService {
         HealthGroup healthGroup = healthGroupRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Health group with id: " + id + " was not found"));
         healthGroupMapper.updateFromPut(request, healthGroup);
-        return healthGroupMapper.toResponse(healthGroupRepository.save(healthGroup));
+        HealthGroup saved = healthGroupRepository.save(healthGroup);
+        log.info("HealthGroup updated: healthGroupId={}", saved.getId());
+        return healthGroupMapper.toResponse(saved);
     }
 }

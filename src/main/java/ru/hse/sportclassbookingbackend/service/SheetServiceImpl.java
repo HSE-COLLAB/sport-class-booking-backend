@@ -1,6 +1,7 @@
 package ru.hse.sportclassbookingbackend.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +33,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SheetServiceImpl implements SheetService {
@@ -79,6 +81,8 @@ public class SheetServiceImpl implements SheetService {
         Sheet saved = sheetRepository.save(sheet);
 
         eventPublisher.publishEvent(new SheetCreatedEvent(saved.getId(), lesson.getId(), student.getId()));
+        log.info("Sheet registered: sheetId={} lessonId={} studentId={} (confirmation email queued)",
+                saved.getId(), lesson.getId(), student.getId());
 
         return new SheetIdResponse(saved.getId());
     }
@@ -104,6 +108,8 @@ public class SheetServiceImpl implements SheetService {
         boolean cancelledByOther = !sheet.getStudent().getId().equals(principal.getId());
 
         sheetRepository.delete(sheet);
+        log.info("Sheet cancelled: sheetId={} lessonId={} studentId={} by userId={} role={}",
+                sheetId, lessonId, sheet.getStudent().getId(), principal.getId(), principal.getRole());
 
         if (cancelledByOther) {
             eventPublisher.publishEvent(new SheetCancelledByOtherEvent(
@@ -112,6 +118,7 @@ public class SheetServiceImpl implements SheetService {
                     sheet.getStudent().getId(),
                     principal.getId()
             ));
+            log.info("SheetCancelledByOtherEvent published: sheetId={} (notification email queued)", sheetId);
         }
     }
 
@@ -153,6 +160,8 @@ public class SheetServiceImpl implements SheetService {
 
         sheetRepository.saveAll(sheets);
 
+        log.info("Attendance marked: lessonId={} sheets={} by userId={} role={}",
+                lessonId, request.marks().size(), principal.getId(), principal.getRole());
         return sheets.stream()
                 .map(sheetMapper::toAttendeeResponse)
                 .toList();

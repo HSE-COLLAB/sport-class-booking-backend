@@ -1,6 +1,7 @@
 package ru.hse.sportclassbookingbackend.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.hse.sportclassbookingbackend.dto.studentgroup.StudentGroupPatchRequest;
 import ru.hse.sportclassbookingbackend.dto.studentgroup.StudentGroupRequest;
@@ -13,6 +14,7 @@ import ru.hse.sportclassbookingbackend.repository.StudentGroupRepository;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class StudentGroupServiceImpl implements StudentGroupService {
@@ -31,7 +33,9 @@ public class StudentGroupServiceImpl implements StudentGroupService {
 
     @Override
     public StudentGroupResponse create(StudentGroupRequest request) {
-        return studentGroupMapper.toResponse(studentGroupRepository.save(studentGroupMapper.toEntity(request)));
+        StudentGroup saved = studentGroupRepository.save(studentGroupMapper.toEntity(request));
+        log.info("StudentGroup created: studentGroupId={}", saved.getId());
+        return studentGroupMapper.toResponse(saved);
     }
 
     @Override
@@ -42,11 +46,13 @@ public class StudentGroupServiceImpl implements StudentGroupService {
         studentGroupMapper.updateFromPatch(request, studentGroup);
         studentGroupRepository.save(studentGroup);
 
+        log.info("StudentGroup updated: studentGroupId={}", id);
         return studentGroupMapper.toResponse(studentGroup);
     }
 
     @Override
     public void delete(UUID id) {
         studentGroupRepository.deleteById(id);
+        log.info("StudentGroup deleted: studentGroupId={}", id);
     }
 }

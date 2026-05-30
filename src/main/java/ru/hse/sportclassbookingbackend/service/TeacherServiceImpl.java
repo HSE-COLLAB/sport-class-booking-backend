@@ -1,6 +1,7 @@
 package ru.hse.sportclassbookingbackend.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import ru.hse.sportclassbookingbackend.dto.teacher.TeacherPatchRequest;
@@ -15,6 +16,7 @@ import ru.hse.sportclassbookingbackend.repository.UserRepository;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TeacherServiceImpl implements TeacherService{
@@ -27,6 +29,7 @@ public class TeacherServiceImpl implements TeacherService{
         teacherRepository.findById(id).ifPresent(teacher -> {
             teacher.setIsActive(false);
             teacherRepository.save(teacher);
+            log.info("Teacher deactivated: teacherId={}", id);
         });
     }
 
@@ -47,7 +50,9 @@ public class TeacherServiceImpl implements TeacherService{
             teacher.setPosition(request.position());
         }
 
-        return teacherMapper.toResponse(teacherRepository.save(teacher));
+        Teacher saved = teacherRepository.save(teacher);
+        log.info("Teacher updated: teacherId={}", saved.getId());
+        return teacherMapper.toResponse(saved);
     }
 
     public TeacherResponse getById(UUID id) {

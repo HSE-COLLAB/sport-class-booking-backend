@@ -1,6 +1,7 @@
 package ru.hse.sportclassbookingbackend.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -50,6 +51,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class LessonServiceImpl implements LessonService {
@@ -139,7 +141,10 @@ public class LessonServiceImpl implements LessonService {
         lesson.setWorkoutType(workoutType);
         lesson.setStatus(LessonStatus.ACTIVE);
 
-        return toResponse(lessonRepository.save(lesson));
+        Lesson saved = lessonRepository.save(lesson);
+        log.info("Lesson created: lessonId={} teacherId={} campusId={} startTime={}",
+                saved.getId(), teacher.getId(), campus.getId(), saved.getStartTime());
+        return toResponse(saved);
     }
 
     @Override
@@ -168,6 +173,8 @@ public class LessonServiceImpl implements LessonService {
         LocalDate firstDate = lessons.getFirst().getStartTime().toLocalDate();
         LocalDate lastDate = lessons.getLast().getStartTime().toLocalDate();
 
+        log.info("Recurring lessons created: count={} teacherId={} firstDate={} lastDate={}",
+                lessons.size(), teacher.getId(), firstDate, lastDate);
         return new RecurringLessonResponse(lessons.size(), firstDate, lastDate);
     }
 
@@ -234,8 +241,11 @@ public class LessonServiceImpl implements LessonService {
 
         Lesson saved = lessonRepository.save(lesson);
         LessonInfo after = toLessonInfo(saved);
+        log.info("Lesson updated: lessonId={} by userId={} role={}",
+                saved.getId(), principal.getId(), principal.getRole());
         if (hasRelevantChange(before, after)) {
             eventPublisher.publishEvent(new LessonChangedEvent(saved.getId(), before, after));
+            log.info("LessonChangedEvent published: lessonId={} (notification emails will be queued)", saved.getId());
         }
         return toResponse(saved);
     }
@@ -257,6 +267,8 @@ public class LessonServiceImpl implements LessonService {
         lesson.setStatus(LessonStatus.CANCELLED);
         Lesson saved = lessonRepository.save(lesson);
         eventPublisher.publishEvent(new LessonCancelledEvent(saved.getId(), snapshot));
+        log.info("Lesson cancelled: lessonId={} by userId={} role={} (cancellation emails will be queued)",
+                saved.getId(), principal.getId(), principal.getRole());
         return toResponse(saved);
     }
 
