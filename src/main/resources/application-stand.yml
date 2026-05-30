@@ -39,5 +39,5 @@ security:
 
 logging:
   level:
-    root: WARN
+    root: INFO
     ru.hse.sportclassbookingbackend: INFO

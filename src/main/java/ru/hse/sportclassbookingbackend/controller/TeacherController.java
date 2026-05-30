@@ -26,7 +26,7 @@ import ru.hse.sportclassbookingbackend.service.TeacherService;
 import java.util.List;
 import java.util.UUID;
 
-@Tag(name = "Teachers", description = "Управление преподавателями: листинг (admin/teacher), self-update, смена должности.")
+@Tag(name = "Teachers", description = "Управление преподавателями: листинг (admin/teacher), редактирование (ADMIN любого, TEACHER только себя), деактивация.")
 @SecurityRequirement(name = "bearerAuth")
 @RestController
 @RequestMapping("/teachers")
@@ -63,6 +63,8 @@ public class TeacherController {
             @ApiResponse(responseCode = "403", description = "Не ADMIN и не сам себя",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "404", description = "Преподаватель не найден",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Новый email уже занят другим пользователем",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @PatchMapping("/{id}")

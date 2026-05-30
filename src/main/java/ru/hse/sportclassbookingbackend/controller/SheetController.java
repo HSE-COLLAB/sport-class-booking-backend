@@ -47,11 +47,11 @@ public class SheetController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Запись создана"),
-            @ApiResponse(responseCode = "400", description = "Урок уже начался / чужой кампус / health group не подходит",
+            @ApiResponse(responseCode = "400", description = "Урок уже начался / health group студента не входит в allowedHealthGroups типа тренировки",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "401", description = "Invalid or expired token",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "403", description = "Нет роли STUDENT",
+            @ApiResponse(responseCode = "403", description = "Нет роли STUDENT, либо студент пытается записаться на урок в чужом кампусе",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "404", description = "Урок не найден",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
@@ -75,13 +75,15 @@ public class SheetController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Запись удалена"),
-            @ApiResponse(responseCode = "400", description = "Sheet не принадлежит указанному lessonId / урок уже начался / STUDENT снимает чужую / TEACHER снимает запись на чужом уроке",
+            @ApiResponse(responseCode = "400", description = "Sheet не принадлежит указанному lessonId / урок уже начался",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "401", description = "Invalid or expired token",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "403", description = "Нет ни одной из ролей STUDENT/TEACHER/ADMIN",
+            @ApiResponse(responseCode = "403", description = "Нет роли STUDENT/TEACHER/ADMIN, либо STUDENT снимает чужую запись, либо TEACHER снимает запись на чужом уроке",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "404", description = "Sheet не найден",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Урок CANCELLED — отмена записи невозможна",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @DeleteMapping("/{sheetId}")
@@ -103,9 +105,7 @@ public class SheetController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Список записей"),
-            @ApiResponse(responseCode = "401", description = "Invalid or expired token",
-                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "403", description = "Отсутствует авторизация",
+            @ApiResponse(responseCode = "401", description = "Invalid or expired token / отсутствует авторизация",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "404", description = "Урок не найден",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
@@ -121,11 +121,11 @@ public class SheetController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Посещаемость обновлена"),
-            @ApiResponse(responseCode = "400", description = "Урок ещё не начался / TEACHER отмечает на чужом уроке / sheetId не принадлежит уроку / пустой marks",
+            @ApiResponse(responseCode = "400", description = "Урок ещё не начался / sheetId не принадлежит этому уроку / пустой marks",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "401", description = "Invalid or expired token",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "403", description = "Нет роли TEACHER/ADMIN",
+            @ApiResponse(responseCode = "403", description = "Нет роли TEACHER/ADMIN, либо TEACHER отмечает на чужом уроке",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "404", description = "Урок не найден",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),

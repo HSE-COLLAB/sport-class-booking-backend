@@ -69,11 +69,13 @@ public class WorkoutTypeController {
     @Operation(summary = "Создать тип тренировки", description = "ADMIN/TEACHER. allowedHealthGroupIds — непустой набор id из /health-groups.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Создан"),
-            @ApiResponse(responseCode = "400", description = "Невалидный payload (пустой title или allowedHealthGroupIds) / id медгруппы не существуют",
+            @ApiResponse(responseCode = "400", description = "Невалидный payload (пустой title или allowedHealthGroupIds)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "401", description = "Invalid or expired token",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "403", description = "Не ADMIN/TEACHER",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Хотя бы один из allowedHealthGroupIds не существует",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @PostMapping
@@ -85,13 +87,13 @@ public class WorkoutTypeController {
     @Operation(summary = "Обновить тип тренировки", description = "Менять можно title и/или allowedHealthGroupIds. Нельзя редактировать неактивный.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Обновлено"),
-            @ApiResponse(responseCode = "400", description = "Невалидный payload / id медгрупп не существуют",
+            @ApiResponse(responseCode = "400", description = "Невалидный payload (пустые поля)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "401", description = "Invalid or expired token",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "403", description = "Не ADMIN/TEACHER",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "404", description = "Не найден или неактивен",
+            @ApiResponse(responseCode = "404", description = "Тип не найден или неактивен / хотя бы один из allowedHealthGroupIds не существует",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @PatchMapping("/{id}")
